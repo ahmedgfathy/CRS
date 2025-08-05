@@ -5,16 +5,28 @@
   "main": "setup.js",
   "scripts": {
     "setup": "node setup.js",
-    "test-connection": "node test-connection.js"
+    "migrate": "node migrate.js",
+    "migrate:test": "node migrate.js test",
+    "migrate:analyze": "node migrate.js analyze",
+    "migrate:users": "node migrate.js users",
+    "migrate:properties": "node migrate.js properties", 
+    "migrate:leads": "node migrate.js leads",
+    "migrate:full": "node migrate.js full"
   },
   "dependencies": {
-    "pg": "^8.11.3",
-    "dotenv": "^16.3.1"
+    "appwrite": "^18.2.0",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "@types/pg": "^8.10.9"
   },
-  "keywords": ["supabase", "real-estate", "crm", "postgresql"],
+  "keywords": [
+    "supabase",
+    "real-estate",
+    "crm",
+    "postgresql"
+  ],
   "author": "Real Estate CRM Team",
   "license": "MIT"
 }
