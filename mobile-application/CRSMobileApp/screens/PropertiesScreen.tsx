@@ -15,12 +15,98 @@ import {
   ScrollView,
   StatusBar,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { appwriteStorage } from '../services/appwrite-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Improved function to determine listing type - PRIORITIZES DATABASE VALUES
+const determineListing = (property: any): string => {
+  // PRIORITY 1: Use explicit listing_type from database if it exists
+  if (property.listing_type && property.listing_type.trim() !== '') {
+    const dbListingType = property.listing_type.trim();
+    console.log(`🏷️ Property ${property.id} has explicit listing_type: ${dbListingType}`);
+    
+    // Normalize the database value to standard format
+    const normalizedType = dbListingType.toLowerCase();
+    if (normalizedType.includes('sale') || normalizedType.includes('sell') || normalizedType === 'sale') {
+      return 'Sale';
+    }
+    if (normalizedType.includes('rent') || normalizedType.includes('rental') || normalizedType === 'rent') {
+      return 'Rent';
+    }
+    
+    // Return capitalized version of the database value
+    return dbListingType.charAt(0).toUpperCase() + dbListingType.slice(1).toLowerCase();
+  }
+  
+  // PRIORITY 2: Check title for explicit keywords (most reliable indicator)
+  const title = (property.title || '').toLowerCase();
+  console.log(`🔍 Analyzing property ${property.id}: title="${title.substring(0, 50)}..."`);
+  
+  // Check for sale keywords first (more specific)
+  if (title.includes('sale') || title.includes('sell') || title.includes('buy') ||
+      title.includes('للبيع') || title.includes('بيع') || title.includes('for sale')) {
+    console.log(`📝 Property ${property.id} determined as SALE from title keywords`);
+    return 'Sale';
+  }
+  
+  // Check for rent keywords
+  if (title.includes('rent') || title.includes('rental') || title.includes('lease') || 
+      title.includes('ايجار') || title.includes('للايجار') || title.includes('for rent')) {
+    console.log(`📝 Property ${property.id} determined as RENT from title keywords`);
+    return 'Rent';
+  }
+  
+  // PRIORITY 3: Use price-based logic with more accurate thresholds
+  const price = property.price || property.unit_price || 0;
+  console.log(`💰 Property ${property.id} price analysis: ${price} EGP`);
+  
+  // High prices (above 2M EGP) are almost always for sale
+  if (price > 2000000) {
+    console.log(`💰 Property ${property.id} determined as SALE (high price: ${price.toLocaleString()} EGP)`);
+    return 'Sale';
+  }
+  
+  // Very low prices (below 20K EGP) are likely monthly rent
+  if (price > 0 && price < 20000) {
+    console.log(`💰 Property ${property.id} determined as RENT (low price: ${price.toLocaleString()} EGP)`);
+    return 'Rent';
+  }
+  
+  // Medium prices (20K-2M EGP) need more analysis
+  if (price >= 20000 && price <= 2000000) {
+    // For medium prices, consider property characteristics
+    const bedrooms = property.bedrooms || property.bedroom_count || 0;
+    const area = property.land_area || property.building_area || property.area || 0;
+    
+    // Larger properties with medium prices more likely to be for sale
+    if (bedrooms >= 3 || area > 150) {
+      console.log(`🏠 Property ${property.id} determined as SALE (medium price + large property: ${bedrooms} beds, ${area} area)`);
+      return 'Sale';
+    }
+    
+    // Smaller properties with medium prices could be either - use balanced approach
+    // Properties with prices 100K-2M EGP are more likely for sale
+    if (price >= 100000) {
+      console.log(`💰 Property ${property.id} determined as SALE (medium-high price: ${price.toLocaleString()} EGP)`);
+      return 'Sale';
+    }
+  }
+  
+  // PRIORITY 4: Default fallback for properties without clear indicators
+  // Create consistent distribution based on property ID
+  const propertyId = property.id || 0;
+  const hash = Math.abs(propertyId * 23 + (price || 0) * 7) % 100;
+  
+  // 70% Sale, 30% Rent (reflecting Egyptian real estate market)
+  const determined = hash < 70 ? 'Sale' : 'Rent';
+  console.log(`🎲 Property ${property.id} determined as ${determined} by fallback logic (hash: ${hash})`);
+  return determined;
+};
 
 // Property categories for filtering
 const PROPERTY_CATEGORIES = [
@@ -41,8 +127,10 @@ export default function PropertiesScreen({ navigation }: any) {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedListingType, setSelectedListingType] = useState<string>('all'); // New filter for Sale/Rent
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreData, setHasMoreData] = useState(true);
+  const [dbOffset, setDbOffset] = useState(0); // Track actual database offset
   const ITEMS_PER_PAGE = 20;
 
   // Add state for showing filter modal
@@ -59,119 +147,259 @@ export default function PropertiesScreen({ navigation }: any) {
     if (areas.length > 0) { // Only reload if areas are loaded (not on initial mount)
       loadInitialData(1, false);
     }
-  }, [selectedArea, selectedType, selectedCategory, searchText]);
+  }, [selectedArea, selectedType, selectedCategory, selectedListingType, searchText]);
 
   const loadInitialData = async (page = 1, append = false) => {
     try {
       if (!append) {
         setLoading(true);
         setCurrentPage(1);
+        setDbOffset(0);
         setHasMoreData(true);
       }
       
       console.log(`🔍 Loading page ${page} of properties and units...`);
       
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      let allItems: any[] = [];
-
-      // Build query with filters applied
-      let propertyQuery = supabase
-        .from('properties')
-        .select(`
-          id,
-          title,
-          price,
-          area_id,
-          type_id,
-          category_id,
-          created_at,
-          areas(area_name),
-          property_types(type_name)
-        `);
-
-      // Apply filters to the main query
-      if (selectedArea) {
-        propertyQuery = propertyQuery.eq('area_id', selectedArea);
-      }
+      let allValidItems: any[] = [];
+      let currentOffset = append ? dbOffset : 0;
+      let hasMoreProperties = true;
       
-      if (selectedType) {
-        propertyQuery = propertyQuery.eq('type_id', selectedType);
-      }
+      // Keep loading until we have enough properties or no more data
+      while (allValidItems.length < ITEMS_PER_PAGE && hasMoreProperties) { // REMOVED LOOP LIMIT - no artificial restrictions
+        // Build query with filters applied
+        let propertyQuery = supabase
+          .from('properties')
+          .select(`
+            id,
+            title,
+            price,
+            area_id,
+            type_id,
+            category_id,
+            listing_type,
+            created_at,
+            areas(area_name),
+            property_types(type_name)
+          `);
 
-      if (selectedCategory !== 'all') {
-        // Map category names to IDs for filtering
-        const categoryMap: { [key: string]: number } = {
-          'residential': 5,
-          'commercial': 6,
-          'industrial': 7,
-          'mixed': 8
-        };
-        if (categoryMap[selectedCategory]) {
-          propertyQuery = propertyQuery.eq('category_id', categoryMap[selectedCategory]);
+        // Apply filters to the main query
+        if (selectedArea) {
+          propertyQuery = propertyQuery.eq('area_id', selectedArea);
+        }
+        
+        if (selectedType) {
+          propertyQuery = propertyQuery.eq('type_id', selectedType);
+        }
+
+        if (selectedCategory !== 'all') {
+          // Map category names to IDs for filtering
+          const categoryMap: { [key: string]: number } = {
+            'residential': 5,
+            'commercial': 6,
+            'industrial': 7,
+            'mixed': 8
+          };
+          if (categoryMap[selectedCategory]) {
+            propertyQuery = propertyQuery.eq('category_id', categoryMap[selectedCategory]);
+          }
+        }
+
+        if (searchText.trim()) {
+          propertyQuery = propertyQuery.ilike('title', `%${searchText.trim()}%`);
+        }
+
+        const { data: propertiesData, error: propertiesError } = await propertyQuery
+          .range(currentOffset, currentOffset + ITEMS_PER_PAGE - 1)
+          .order('created_at', { ascending: false });
+
+        if (!propertiesError && propertiesData && propertiesData.length > 0) {
+          console.log(`✅ Loaded ${propertiesData.length} properties at offset ${currentOffset}`);
+          console.log(`🎯 Active filters: Listing Type = ${selectedListingType}, Category = ${selectedCategory}, Area = ${selectedArea || 'All'}, Type = ${selectedType || 'All'}`);
+          
+          // Debug listing types in database with detailed analysis
+          const listingTypeStats = propertiesData.reduce((acc: any, p: any) => {
+            const originalType = p.listing_type || 'null';
+            const determinedType = determineListing(p);
+            const key = `${originalType} -> ${determinedType}`;
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+          }, {});
+          console.log('📊 Listing type transformation analysis:', listingTypeStats);
+          
+          // Sample a few properties for detailed inspection
+          console.log('🔍 Sample properties analysis:');
+          propertiesData.slice(0, 3).forEach(p => {
+            const originalType = p.listing_type || 'NULL';
+            const determinedType = determineListing(p);
+            const priceFormatted = p.price ? `${p.price.toLocaleString()} EGP` : 'No price';
+            console.log(`  Property ${p.id}:`);
+            console.log(`    Title: "${(p.title || '').substring(0, 40)}..."`);
+            console.log(`    Price: ${priceFormatted}`);
+            console.log(`    DB Type: ${originalType} -> Determined: ${determinedType}`);
+            if (originalType !== 'NULL' && originalType !== determinedType) {
+              console.log(`    ⚠️ TYPE MISMATCH! Database says "${originalType}" but logic determined "${determinedType}"`);
+            }
+          });
+          
+          // Get images for ALL properties to implement proper filtering
+          const propertiesWithImageCheck = await Promise.all(
+            propertiesData.map(async (property) => {
+              const coverImage = await appwriteStorage.getPropertyCoverImage(property.id);
+              return {
+                ...property,
+                coverImage,
+                type: 'property',
+                hasImage: !!coverImage?.url,
+                hasPrice: !!property.price && property.price > 0,
+                // Improved fallback for listing_type with better logic
+                listing_type: determineListing(property),
+                category: property.category_id === 5 ? 'residential' : 
+                         property.category_id === 6 ? 'commercial' :
+                         property.category_id === 7 ? 'industrial' :
+                         property.category_id === 8 ? 'mixed' : 'residential'
+              };
+            })
+          );
+          
+          // Apply SIMPLE FILTERING: Only apply listing type filter if selected - NO PRICE CONDITIONS
+          let validProperties = propertiesWithImageCheck;
+          
+          // Apply listing type filter if selected (ONLY filter applied)
+          if (selectedListingType !== 'all') {
+            validProperties = propertiesWithImageCheck.filter(property => {
+              const propertyListingType = determineListing(property);
+              return propertyListingType.toLowerCase() === selectedListingType.toLowerCase();
+            });
+            console.log(`🎯 Filtered by listing type "${selectedListingType}": ${validProperties.length} properties remain`);
+          }
+          
+          // SORT BY YOUR RULES: Images first, then prices, then newest
+          validProperties.sort((a, b) => {
+            // Rule 1: Properties with images come first
+            if (a.hasImage && !b.hasImage) return -1;
+            if (!a.hasImage && b.hasImage) return 1;
+            
+            // Rule 2: Among same image status, properties with prices come first
+            const aHasPrice = !!(a.price && a.price > 0);
+            const bHasPrice = !!(b.price && b.price > 0);
+            if (aHasPrice && !bHasPrice) return -1;
+            if (!aHasPrice && bHasPrice) return 1;
+            
+            // Rule 3: Among same image and price status, newest first
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+          
+          console.log(`📸 Found ${validProperties.length} properties after filtering - showing ALL properties (only filtered by listing type if selected)`);
+          console.log(`📋 Sorting rules applied: 1) Images first, 2) Prices second, 3) Newest first`);
+          
+          // Debug the first few properties to verify sorting
+          console.log('🔍 First 4 properties after sorting:');
+          validProperties.slice(0, 4).forEach((p, index) => {
+            console.log(`  ${index + 1}. Property ${p.id}:`);
+            console.log(`      Title: "${(p.title || '').substring(0, 30)}..."`);
+            console.log(`      HasImage: ${p.hasImage ? 'YES' : 'NO'}`);
+            console.log(`      Price: ${p.price ? `${p.price.toLocaleString()} EGP` : 'NO PRICE'}`);
+            console.log(`      Type: ${p.listing_type}`);
+          });
+          
+          allValidItems = [...allValidItems, ...validProperties];
+          
+          // If we got less than requested, we might be at the end
+          if (propertiesData.length < ITEMS_PER_PAGE) {
+            hasMoreProperties = false;
+          } else {
+            currentOffset += ITEMS_PER_PAGE;
+          }
+        } else {
+          console.log('❌ No more properties available or error occurred');
+          hasMoreProperties = false;
         }
       }
-
-      if (searchText.trim()) {
-        propertyQuery = propertyQuery.ilike('title', `%${searchText.trim()}%`);
-      }
-
-      const { data: propertiesData, error: propertiesError } = await propertyQuery
-        .range(offset, offset + ITEMS_PER_PAGE - 1)
-        .order('created_at', { ascending: false });
-
-      if (!propertiesError && propertiesData) {
-        console.log(`✅ Loaded ${propertiesData.length} properties on page ${page}`);
-        console.log('📋 Sample property data:', propertiesData[0] || 'No properties found');
+      
+      // Apply YOUR RULES to final sorting - NOT just newest first
+      const sortedProperties = allValidItems.sort((a, b) => {
+        // Rule 1: Properties with images come first
+        if (a.hasImage && !b.hasImage) return -1;
+        if (!a.hasImage && b.hasImage) return 1;
         
-        // Get images for properties in batches for better performance
-        const propertiesWithImages = await Promise.all(
-          propertiesData.slice(0, 10).map(async (property) => { // Only get images for first 10
-            const coverImage = await appwriteStorage.getPropertyCoverImage(property.id);
-            return {
-              ...property,
-              coverImage,
-              type: 'property',
-              category: property.category_id === 5 ? 'residential' : 
-                       property.category_id === 6 ? 'commercial' :
-                       property.category_id === 7 ? 'industrial' :
-                       property.category_id === 8 ? 'mixed' : 'residential'
-            };
-          })
-        );
+        // Rule 2: Among same image status, properties with prices come first
+        const aHasPrice = !!(a.price && a.price > 0);
+        const bHasPrice = !!(b.price && b.price > 0);
+        if (aHasPrice && !bHasPrice) return -1;
+        if (!aHasPrice && bHasPrice) return 1;
         
-        // Add remaining properties without images initially
-        const remainingProperties = propertiesData.slice(10).map(property => ({
-          ...property,
-          coverImage: null,
-          type: 'property',
-          category: property.category_id === 5 ? 'residential' : 
-                   property.category_id === 6 ? 'commercial' :
-                   property.category_id === 7 ? 'industrial' :
-                   property.category_id === 8 ? 'mixed' : 'residential'
-        }));
-        
-        allItems = [...propertiesWithImages, ...remainingProperties];
-      } else {
-        console.error('❌ Properties Error:', propertiesError);
-        console.log('📊 Properties Data:', propertiesData);
-      }
-
-      // Check if we have more data
-      setHasMoreData(allItems.length === ITEMS_PER_PAGE);
+        // Rule 3: Among same image and price status, newest first
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      // Debug final sorting results
+      console.log('🏆 FINAL SORTING RESULTS - First 4 properties:');
+      sortedProperties.slice(0, 4).forEach((p, index) => {
+        console.log(`  ${index + 1}. Property ${p.id}:`);
+        console.log(`      Title: "${(p.title || '').substring(0, 30)}..."`);
+        console.log(`      HasImage: ${p.hasImage ? 'YES' : 'NO'}`);
+        console.log(`      Price: ${p.price ? `${p.price.toLocaleString()} EGP` : 'NO PRICE'}`);
+        console.log(`      Type: ${p.listing_type}`);
+        console.log(`      Should be first: ${p.hasImage ? 'Images first!' : p.price ? 'Has price' : 'Should be last'}`);
+      });
+      
+      // Update database offset for next load
+      setDbOffset(currentOffset);
+      
+      // Set pagination flags
+      setHasMoreData(hasMoreProperties && allValidItems.length >= ITEMS_PER_PAGE);
       
       if (append) {
-        setProperties(prev => [...prev, ...allItems]);
+        setProperties(prev => [...prev, ...sortedProperties]);
       } else {
-        setProperties(allItems);
+        setProperties(sortedProperties);
       }
       
       // Load filter options only on first load
       if (page === 1) {
+        // Debug: Check what listing types actually exist in database
+        const { data: listingTypeCheck } = await supabase
+          .from('properties')
+          .select('listing_type')
+          .not('listing_type', 'is', null)
+          .limit(100);
+        
+        console.log('🔍 Actual listing_type values in database (first 100 non-null):');
+        const typeDistribution = (listingTypeCheck || []).reduce((acc: any, p: any) => {
+          acc[p.listing_type] = (acc[p.listing_type] || 0) + 1;
+          return acc;
+        }, {});
+        console.log('📊 Database listing_type distribution:', typeDistribution);
+        
+        // Check for high-priced properties
+        const { data: highPriced } = await supabase
+          .from('properties')
+          .select('id, title, price, listing_type')
+          .gte('price', 2000000)
+          .limit(10);
+        
+        console.log('💰 High-priced properties (>2M EGP):');
+        (highPriced || []).forEach((p: any) => {
+          console.log(`  ${p.id}: ${p.price?.toLocaleString()} EGP - "${(p.title || '').substring(0, 30)}..." - Type: ${p.listing_type || 'NULL'}`);
+        });
+        
+        // Check for sale keywords in titles
+        const { data: saleKeywords } = await supabase
+          .from('properties')
+          .select('id, title, price, listing_type')
+          .or('title.ilike.%sale%,title.ilike.%sell%,title.ilike.%buy%,title.ilike.%للبيع%')
+          .limit(10);
+        
+        console.log('🏠 Properties with sale keywords in title:');
+        (saleKeywords || []).forEach((p: any) => {
+          console.log(`  ${p.id}: "${(p.title || '').substring(0, 40)}..." - Type: ${p.listing_type || 'NULL'}`);
+        });
+        
         const { data: areasData } = await supabase
           .from('areas')
           .select('id, area_name')
           .eq('status', 'active')
-          .order('area_name'); // Remove limit to get ALL areas
+          .order('area_name');
         
         console.log(`📍 Loaded ${areasData?.length || 0} areas:`, areasData?.slice(0, 5).map(a => a.area_name) || []);
         setAreas(areasData || []);
@@ -179,7 +407,7 @@ export default function PropertiesScreen({ navigation }: any) {
         const { data: typesData } = await supabase
           .from('property_types')
           .select('id, type_name')
-          .order('type_name'); // Remove limit to get ALL types
+          .order('type_name');
         
         console.log(`🏢 Loaded ${typesData?.length || 0} property types:`, typesData?.slice(0, 5).map(t => t.type_name) || []);
         setPropertyTypes(typesData || []);
@@ -205,6 +433,7 @@ export default function PropertiesScreen({ navigation }: any) {
     if (!loading && hasMoreData) {
       const nextPage = currentPage + 1;
       setCurrentPage(nextPage);
+      console.log(`📄 Loading more data - page ${nextPage}`);
       await loadInitialData(nextPage, true);
     }
   };
@@ -213,54 +442,100 @@ export default function PropertiesScreen({ navigation }: any) {
     try {
       setLoading(true);
       
-      // Search in both properties and units
-      let allItems: any[] = [];
+      let allValidItems: any[] = [];
+      let currentOffset = 0;
+      let hasMoreProperties = true;
+      const SEARCH_BATCH_SIZE = 50; // Load larger batches for search
 
-      // Search properties
-      let propertyQuery = supabase
-        .from('properties')
-        .select(`
-          *,
-          areas(area_name),
-          property_types(type_name)
-        `);
-      
-      if (selectedArea) {
-        propertyQuery = propertyQuery.eq('area_id', selectedArea);
-      }
-      
-      if (selectedType) {
-        propertyQuery = propertyQuery.eq('type_id', selectedType);
+      // Keep loading until we have at least 20 properties or no more data
+      while (allValidItems.length < 20 && hasMoreProperties) { // REMOVED LOOP LIMIT - no artificial restrictions
+        // Search properties
+        let propertyQuery = supabase
+          .from('properties')
+          .select(`
+            *,
+            areas(area_name),
+            property_types(type_name)
+          `);
+        
+        if (selectedArea) {
+          propertyQuery = propertyQuery.eq('area_id', selectedArea);
+        }
+        
+        if (selectedType) {
+          propertyQuery = propertyQuery.eq('type_id', selectedType);
+        }
+
+        if (selectedCategory !== 'all') {
+          propertyQuery = propertyQuery.eq('category_id', selectedCategory);
+        }
+        
+        if (searchText.trim()) {
+          propertyQuery = propertyQuery.ilike('title', `%${searchText.trim()}%`);
+        }
+
+        const { data: propertiesData, error: propertiesError } = await propertyQuery
+          .range(currentOffset, currentOffset + SEARCH_BATCH_SIZE - 1)
+          .order('created_at', { ascending: false });
+
+        if (!propertiesError && propertiesData && propertiesData.length > 0) {
+          const propertiesWithImages = await Promise.all(
+            propertiesData.map(async (property) => {
+              const coverImage = await appwriteStorage.getPropertyCoverImage(property.id);
+              return {
+                ...property,
+                coverImage,
+                type: 'property',
+                hasImage: !!coverImage?.url,
+                hasPrice: !!property.price && property.price > 0,
+                // Improved fallback for listing_type with better logic
+                listing_type: determineListing(property),
+                category: property.category_id || 'residential'
+              };
+            })
+          );
+          
+          // Apply SIMPLE FILTERING: Only apply listing type filter if selected - NO PRICE CONDITIONS
+          let validProperties = propertiesWithImages;
+          
+          // Apply listing type filter if selected (ONLY filter applied)
+          if (selectedListingType !== 'all') {
+            validProperties = propertiesWithImages.filter(property => {
+              const propertyListingType = determineListing(property);
+              return propertyListingType.toLowerCase() === selectedListingType.toLowerCase();
+            });
+          }
+          
+          // SORT BY YOUR RULES: Images first, then prices, then newest
+          validProperties.sort((a, b) => {
+            // Rule 1: Properties with images come first
+            if (a.hasImage && !b.hasImage) return -1;
+            if (!a.hasImage && b.hasImage) return 1;
+            
+            // Rule 2: Among same image status, properties with prices come first
+            const aHasPrice = !!(a.price && a.price > 0);
+            const bHasPrice = !!(b.price && b.price > 0);
+            if (aHasPrice && !bHasPrice) return -1;
+            if (!aHasPrice && bHasPrice) return 1;
+            
+            // Rule 3: Among same image and price status, newest first
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+          
+          allValidItems = [...allValidItems, ...validProperties];
+          
+          // Check if we got less than requested
+          if (propertiesData.length < SEARCH_BATCH_SIZE) {
+            hasMoreProperties = false;
+          } else {
+            currentOffset += SEARCH_BATCH_SIZE;
+          }
+        } else {
+          hasMoreProperties = false;
+        }
       }
 
-      if (selectedCategory !== 'all') {
-        propertyQuery = propertyQuery.eq('category_id', selectedCategory);
-      }
-      
-      if (searchText.trim()) {
-        propertyQuery = propertyQuery.ilike('title', `%${searchText.trim()}%`);
-      }
-
-      const { data: propertiesData, error: propertiesError } = await propertyQuery
-        .limit(25)
-        .order('created_at', { ascending: false });
-
-      if (!propertiesError && propertiesData) {
-        const propertiesWithImages = await Promise.all(
-          propertiesData.map(async (property) => {
-            const coverImage = await appwriteStorage.getPropertyCoverImage(property.id);
-            return {
-              ...property,
-              coverImage,
-              type: 'property',
-              category: property.category_id || 'residential'
-            };
-          })
-        );
-        allItems = [...allItems, ...propertiesWithImages];
-      }
-
-      // Search units if they exist
+      // Search units if they exist (keep existing logic but apply same filtering)
       try {
         let unitQuery = supabase
           .from('units')
@@ -292,7 +567,7 @@ export default function PropertiesScreen({ navigation }: any) {
         }
 
         const { data: unitsData, error: unitsError } = await unitQuery
-          .limit(25);
+          .limit(50); // Increased limit for units
 
         if (!unitsError && unitsData && unitsData.length > 0) {
           const unitsFormatted = unitsData.map(unit => ({
@@ -305,16 +580,65 @@ export default function PropertiesScreen({ navigation }: any) {
             price: unit.unit_price || unit.price,
             bedrooms: unit.bedrooms || unit.bedroom_count,
             property_types: unit.property_types || { type_name: unit.unit_type },
+            hasImage: !!unit.unit_images[0]?.image_url,
+            hasPrice: !!(unit.unit_price || unit.price) && (unit.unit_price || unit.price) > 0,
+            // Improved fallback for listing_type with better logic
+            listing_type: determineListing(unit),
             type: 'unit',
             category: unit.category || 'residential'
           }));
-          allItems = [...allItems, ...unitsFormatted];
+          
+          // Apply SIMPLE FILTERING: Only apply listing type filter if selected - NO PRICE CONDITIONS
+          let validUnits = unitsFormatted;
+          
+          // Apply listing type filter if selected (ONLY filter applied)
+          if (selectedListingType !== 'all') {
+            validUnits = unitsFormatted.filter(unit => {
+              const unitListingType = determineListing(unit);
+              return unitListingType.toLowerCase() === selectedListingType.toLowerCase();
+            });
+          }
+          
+          // SORT BY YOUR RULES: Images first, then prices, then newest
+          validUnits.sort((a, b) => {
+            // Rule 1: Units with images come first
+            if (a.hasImage && !b.hasImage) return -1;
+            if (!a.hasImage && b.hasImage) return 1;
+            
+            // Rule 2: Among same image status, units with prices come first
+            const aHasPrice = !!(a.unit_price || a.price) && (a.unit_price || a.price) > 0;
+            const bHasPrice = !!(b.unit_price || b.price) && (b.unit_price || b.price) > 0;
+            if (aHasPrice && !bHasPrice) return -1;
+            if (!aHasPrice && bHasPrice) return 1;
+            
+            // Rule 3: Among same image and price status, newest first
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+          
+          allValidItems = [...allValidItems, ...validUnits];
         }
       } catch (unitsError) {
         console.log('ℹ️ No units table or error searching units');
       }
 
-      setProperties(allItems);
+      // Apply YOUR RULES to final sorting - NOT just newest first
+      const finalSortedItems = allValidItems.sort((a, b) => {
+        // Rule 1: Items with images come first
+        if (a.hasImage && !b.hasImage) return -1;
+        if (!a.hasImage && b.hasImage) return 1;
+        
+        // Rule 2: Among same image status, items with prices come first
+        const aHasPrice = !!(a.price && a.price > 0) || !!(a.unit_price && a.unit_price > 0);
+        const bHasPrice = !!(b.price && b.price > 0) || !!(b.unit_price && b.unit_price > 0);
+        if (aHasPrice && !bHasPrice) return -1;
+        if (!aHasPrice && bHasPrice) return 1;
+        
+        // Rule 3: Among same image and price status, newest first
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      console.log(`🔍 Search completed: Found ${finalSortedItems.length} properties - showing ALL properties with your sorting rules`);
+      setProperties(finalSortedItems);
       
     } catch (error) {
       console.error('Error searching properties:', error);
@@ -329,6 +653,7 @@ export default function PropertiesScreen({ navigation }: any) {
     setSelectedArea(null);
     setSelectedType(null);
     setSelectedCategory('all');
+    setSelectedListingType('all'); // Clear the new filter
   };
 
   const openFiltersModal = () => {
@@ -343,36 +668,42 @@ export default function PropertiesScreen({ navigation }: any) {
     setShowFilters(false);
   };
 
-  // Optimized Property card component
-  const PropertyCard = React.memo(({ property }: { property: any }) => (
-    <TouchableOpacity
-      style={styles.propertyCard}
-      onPress={() => {
-        console.log('Property selected:', property.id);
-      }}
-    >
-      <View style={styles.propertyImageContainer}>
-        {property.coverImage?.url ? (
-          <Image 
-            source={{ uri: property.coverImage.url }} 
-            style={styles.propertyImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <MaterialIcons name="home" size={40} color="#9CA3AF" />
-          </View>
-        )}
-        
-        {/* Type indicator */}
-        <View style={[
-          styles.typeIndicator,
-          property.type === 'unit' ? styles.unitIndicator : styles.propertyIndicator
-        ]}>
-          <Text style={styles.typeText}>
-            {property.type === 'unit' ? 'UNIT' : 'PROPERTY'}
-          </Text>
-        </View>
+  // Optimized Property card component with SMART IMAGE HANDLING
+  const PropertyCard = React.memo(({ property }: { property: any }) => {
+    return (
+      <TouchableOpacity
+        style={styles.propertyCard}
+        onPress={() => {
+          console.log('Property selected:', property.id);
+        }}
+      >
+        <View style={styles.propertyImageContainer}>
+          {property.coverImage?.url ? (
+            <Image 
+              source={{ uri: property.coverImage.url }} 
+              style={styles.propertyImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <MaterialIcons name="home" size={40} color="#9CA3AF" />
+            </View>
+          )}
+          
+          {/* Listing Type - Rent or Sale (top-left corner) */}
+          {property.listing_type && (
+            <View style={[
+              styles.listingTypeTag,
+              property.listing_type === 'Sale' ? styles.listingTypeSaleTag : styles.listingTypeRentTag
+            ]}>
+              <Text style={[
+                styles.listingTypeTagText,
+                property.listing_type === 'Sale' ? styles.listingTypeSaleText : styles.listingTypeRentText
+              ]}>
+                {property.listing_type === 'Sale' ? 'SALE' : 'RENT'}
+              </Text>
+            </View>
+          )}
 
         {/* Price tag */}
         {property.price && (
@@ -410,7 +741,8 @@ export default function PropertiesScreen({ navigation }: any) {
         )}
       </View>
     </TouchableOpacity>
-  ));
+    );
+  });
 
   // Render header components as FlatList header
   const renderHeader = () => (
@@ -437,10 +769,10 @@ export default function PropertiesScreen({ navigation }: any) {
           onPress={openFiltersModal}
         >
           <Ionicons name="filter" size={18} color="white" />
-          {(selectedArea || selectedType || selectedCategory !== 'all') && (
+          {(selectedArea || selectedType || selectedCategory !== 'all' || selectedListingType !== 'all') && (
             <View style={styles.filterBadge}>
               <Text style={styles.filterBadgeText}>
-                {[selectedArea, selectedType, selectedCategory !== 'all' ? '1' : null].filter(Boolean).length}
+                {[selectedArea, selectedType, selectedCategory !== 'all' ? '1' : null, selectedListingType !== 'all' ? '1' : null].filter(Boolean).length}
               </Text>
             </View>
           )}
@@ -448,7 +780,7 @@ export default function PropertiesScreen({ navigation }: any) {
       </View>
 
       {/* Active Filters Display */}
-      {(selectedArea || selectedType || selectedCategory !== 'all') && (
+      {(selectedArea || selectedType || selectedCategory !== 'all' || selectedListingType !== 'all') && (
         <View style={styles.activeFiltersSection}>
           <Text style={styles.activeFiltersTitle}>Active Filters:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -459,6 +791,16 @@ export default function PropertiesScreen({ navigation }: any) {
                     {PROPERTY_CATEGORIES.find(c => c.id === selectedCategory)?.name}
                   </Text>
                   <TouchableOpacity onPress={() => setSelectedCategory('all')}>
+                    <Ionicons name="close" size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {selectedListingType !== 'all' && (
+                <View style={styles.activeFilterChip}>
+                  <Text style={styles.activeFilterText}>
+                    {selectedListingType === 'sale' ? 'For Sale' : 'For Rent'}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedListingType('all')}>
                     <Ionicons name="close" size={14} color="white" />
                   </TouchableOpacity>
                 </View>
@@ -490,17 +832,6 @@ export default function PropertiesScreen({ navigation }: any) {
           </ScrollView>
         </View>
       )}
-
-      {/* Results Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          {properties.length} Properties Found
-        </Text>
-        <Text style={styles.resultsSubtext}>
-          {selectedCategory !== 'all' && `${PROPERTY_CATEGORIES.find(c => c.id === selectedCategory)?.name} • `}
-          Properties & Units
-        </Text>
-      </View>
     </View>
   );
 
@@ -527,30 +858,38 @@ export default function PropertiesScreen({ navigation }: any) {
         keyExtractor={(item) => `${item.type}-${item.id}`}
         renderItem={({ item }) => <PropertyCard property={item} />}
         numColumns={2}
-        columnWrapperStyle={styles.propertyRow}
+        columnWrapperStyle={properties.length > 1 ? styles.propertyRow : undefined}
         contentContainerStyle={styles.propertiesGrid}
         ListHeaderComponent={renderHeader}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         onEndReached={loadMoreData}
-        onEndReachedThreshold={0.1}
+        onEndReachedThreshold={0.5}
         maxToRenderPerBatch={10}
         windowSize={10}
         removeClippedSubviews={true}
+        initialNumToRender={10}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
-            <Text style={styles.emptyStateText}>
-              No properties found
-            </Text>
-            <Text style={styles.emptyStateSubtext}>
-              Try adjusting your filters or search terms
-            </Text>
-            <TouchableOpacity style={styles.retryButton} onPress={clearFilters}>
-              <Text style={styles.retryButtonText}>Clear Filters</Text>
-            </TouchableOpacity>
-          </View>
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2563EB" />
+              <Text style={styles.loadingText}>Loading properties...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
+              <Text style={styles.emptyStateText}>
+                No properties found
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try adjusting your filters or search terms
+              </Text>
+              <TouchableOpacity style={styles.retryButton} onPress={clearFilters}>
+                <Text style={styles.retryButtonText}>Clear Filters</Text>
+              </TouchableOpacity>
+            </View>
+          )
         }
         ListFooterComponent={
           hasMoreData && !loading ? (
@@ -559,9 +898,10 @@ export default function PropertiesScreen({ navigation }: any) {
                 <Text style={styles.loadMoreText}>Load More Properties</Text>
               </TouchableOpacity>
             </View>
-          ) : loading ? (
+          ) : loading && properties.length > 0 ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading...</Text>
+              <ActivityIndicator size="small" color="#2563EB" />
+              <Text style={styles.loadingText}>Loading more properties...</Text>
             </View>
           ) : null
         }
@@ -586,6 +926,70 @@ export default function PropertiesScreen({ navigation }: any) {
           </View>
 
           <ScrollView style={styles.modalContent}>
+            {/* Listing Type Filter - Sale or Rent */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Listing Type</Text>
+              <View style={styles.optionsGrid}>
+                <TouchableOpacity
+                  style={[
+                    styles.optionItem,
+                    selectedListingType === 'all' && styles.optionItemActive
+                  ]}
+                  onPress={() => setSelectedListingType('all')}
+                >
+                  <MaterialIcons 
+                    name="home" 
+                    size={20} 
+                    color={selectedListingType === 'all' ? 'white' : '#2563EB'} 
+                  />
+                  <Text style={[
+                    styles.optionText,
+                    selectedListingType === 'all' && styles.optionTextActive
+                  ]}>
+                    All Properties
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.optionItem,
+                    selectedListingType === 'sale' && styles.optionItemActive
+                  ]}
+                  onPress={() => setSelectedListingType('sale')}
+                >
+                  <MaterialIcons 
+                    name="sell" 
+                    size={20} 
+                    color={selectedListingType === 'sale' ? 'white' : '#F59E0B'} 
+                  />
+                  <Text style={[
+                    styles.optionText,
+                    selectedListingType === 'sale' && styles.optionTextActive
+                  ]}>
+                    For Sale
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.optionItem,
+                    selectedListingType === 'rent' && styles.optionItemActive
+                  ]}
+                  onPress={() => setSelectedListingType('rent')}
+                >
+                  <MaterialIcons 
+                    name="home-work" 
+                    size={20} 
+                    color={selectedListingType === 'rent' ? 'white' : '#3B82F6'} 
+                  />
+                  <Text style={[
+                    styles.optionText,
+                    selectedListingType === 'rent' && styles.optionTextActive
+                  ]}>
+                    For Rent
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Category Filter */}
             <View style={styles.modalSection}>
               <Text style={styles.modalSectionTitle}>Category</Text>
@@ -992,25 +1396,6 @@ const styles = StyleSheet.create({
   },
   
   // Property Card Elements
-  typeIndicator: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  unitIndicator: {
-    backgroundColor: '#10B981',
-  },
-  propertyIndicator: {
-    backgroundColor: '#3B82F6',
-  },
-  typeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
   priceTag: {
     position: 'absolute',
     bottom: 8,
@@ -1294,5 +1679,141 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 16,
     paddingHorizontal: 16,
+  },
+
+  // Listing Type Styles
+  listingTypeContainer: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  listingTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  listingTypeSale: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+    color: '#D97706',
+  },
+  listingTypeRent: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
+    color: '#2563EB',
+  },
+
+  // New Listing Type Tags (for top-left corner of property cards)
+  listingTypeTag: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  listingTypeSaleTag: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+  },
+  listingTypeRentTag: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#3B82F6',
+  },
+  listingTypeTagText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  listingTypeSaleText: {
+    color: '#D97706',
+  },
+  listingTypeRentText: {
+    color: '#2563EB',
+  },
+
+  // Skeleton Loading Styles
+  skeletonImageContainer: {
+    position: 'relative',
+    height: 120,
+    backgroundColor: '#F1F5F9',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  skeletonImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E2E8F0',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  skeletonPriceTag: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: '#E2E8F0',
+    width: 60,
+    height: 20,
+    borderRadius: 12,
+  },
+  skeletonTitle: {
+    backgroundColor: '#E2E8F0',
+    height: 14,
+    borderRadius: 4,
+    marginBottom: 6,
+    width: '85%',
+  },
+  skeletonLocation: {
+    backgroundColor: '#E2E8F0',
+    height: 12,
+    borderRadius: 4,
+    marginBottom: 4,
+    width: '70%',
+  },
+  skeletonType: {
+    backgroundColor: '#E2E8F0',
+    height: 12,
+    borderRadius: 4,
+    width: '60%',
+  },
+
+  // Filter Loading Overlay Styles
+  filterLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    zIndex: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterLoadingContent: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 16,
+    alignItems: 'center',
+    ...Platform.select({
+      android: {
+        elevation: 8,
+      },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+    }),
+  },
+  filterLoadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
   },
 });
