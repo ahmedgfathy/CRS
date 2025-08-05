@@ -6,11 +6,11 @@ async function createSchema() {
     console.log('🏗️ Creating database schema for migration...');
     
     const client = new Client({
-        host: 'db.cqylpwdcwrssttrtvtov.supabase.co',
-        port: 5432,
-        database: 'postgres',
-        user: 'postgres.cqylpwdcwrssttrtvtov',
-        password: 'ZeroCall20!@HH##1655&&',
+        host: process.env.POSTGRES_HOST || 'db.cqylpwdcwrssttrtvtov.supabase.co',
+        port: parseInt(process.env.POSTGRES_PORT || '5432'),
+        database: process.env.POSTGRES_DATABASE || 'postgres',
+        user: process.env.POSTGRES_USER,
+        password: process.env.POSTGRES_PASSWORD,
         ssl: { rejectUnauthorized: false }
     });
 

@@ -1,15 +1,13 @@
 const { Client } = require('pg');
 
 const client = new Client({
-  host: 'aws-0-eu-central-1.pooler.supabase.com',
-  database: 'postgres',
-  user: 'postgres.cqylpwdcwrssttrtvtov',
-  password: 'ZeroCall20!@HH##1655&&',
-  port: 6543,
+  host: process.env.POSTGRES_HOST || 'aws-0-eu-central-1.pooler.supabase.com',
+  database: process.env.POSTGRES_DATABASE || 'postgres', 
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  port: parseInt(process.env.POSTGRES_PORT || '6543'),
   ssl: { rejectUnauthorized: false }
-});
-
-async function checkDatabase() {
+});async function checkDatabase() {
   try {
     await client.connect();
     console.log('✅ Connected to Supabase');

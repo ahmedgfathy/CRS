@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Supabase configuration - using your actual credentials from backend
 const supabaseUrl = 'https://cqylpwdcwrssttrtvtov.supabase.co';
-const supabaseAnonKey = '***REMOVED***.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxeWxwd2Rjd3Jzc3R0cnR2dG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNDc0MTcsImV4cCI6MjA2OTkyMzQxN30.-SjQmiFNoDhExLOA_lBz4J57vqbTUryg186uf5h7TWM';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxeWxwd2Rjd3Jzc3R0cnR2dG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNDc0MTcsImV4cCI6MjA2OTkyMzQxN30.-SjQmiFNoDhExLOA_lBz4J57vqbTUryg186uf5h7TWM';
 
 // Create Supabase client with AsyncStorage for session persistence
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

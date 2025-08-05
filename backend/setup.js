@@ -15,13 +15,13 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Supabase Configuration - using pooler connection
+// Supabase Configuration - using environment variables
 const SUPABASE_CONFIG = {
-  host: 'aws-0-eu-central-1.pooler.supabase.com',
-  database: 'postgres',
-  user: 'postgres.cqylpwdcwrssttrtvtov',
-  password: 'ZeroCall20!@HH##1655&&',
-  port: 6543,
+  host: process.env.POSTGRES_HOST || 'aws-0-eu-central-1.pooler.supabase.com',
+  database: process.env.POSTGRES_DATABASE || 'postgres',
+  user: process.env.POSTGRES_USER || 'postgres.cqylpwdcwrssttrtvtov',
+  password: process.env.POSTGRES_PASSWORD,
+  port: parseInt(process.env.POSTGRES_PORT || '6543'),
   ssl: { rejectUnauthorized: false }
 };
 
@@ -149,28 +149,28 @@ function createEnvironmentFile() {
 # Project: supabase-emerald-tree
 # Created: ${new Date().toISOString()}
 
-# Database Connection
-POSTGRES_URL="postgres://postgres.cqylpwdcwrssttrtvtov:ZeroCall20!@HH##1655&&@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x"
-POSTGRES_USER="postgres"
-POSTGRES_PASSWORD="ZeroCall20!@HH##1655&&"
-POSTGRES_HOST="db.cqylpwdcwrssttrtvtov.supabase.co"
+# Database Connection - Replace with your actual credentials
+POSTGRES_URL="your_postgres_connection_string"
+POSTGRES_USER="your_postgres_user"
+POSTGRES_PASSWORD="your_postgres_password"
+POSTGRES_HOST="your_postgres_host"
 POSTGRES_DATABASE="postgres"
-POSTGRES_PRISMA_URL="postgres://postgres.cqylpwdcwrssttrtvtov:ZeroCall20!@HH##1655&&@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true"
-POSTGRES_URL_NON_POOLING="postgres://postgres.cqylpwdcwrssttrtvtov:ZeroCall20!@HH##1655&&@aws-0-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require"
+POSTGRES_PRISMA_URL="your_prisma_connection_string"
+POSTGRES_URL_NON_POOLING="your_non_pooling_connection_string"
 
-# Supabase API
-SUPABASE_URL="https://cqylpwdcwrssttrtvtov.supabase.co"
-SUPABASE_ANON_KEY="***REMOVED***.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxeWxwd2Rjd3Jzc3R0cnR2dG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNDc0MTcsImV4cCI6MjA2OTkyMzQxN30.-SjQmiFNoDhExLOA_lBz4J57vqbTUryg186uf5h7TWM"
-SUPABASE_SERVICE_ROLE_KEY="***REMOVED***.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxeWxwd2Rjd3Jzc3R0cnR2dG92Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDM0NzQxNywiZXhwIjoyMDY5OTIzNDE3fQ.xrwA94CYRa1WkYQ_1qgeM8HXh8tfwjNo22g3Z-4qqaE"
-SUPABASE_JWT_SECRET="G2rVN4sjiRT7ID6d+74X1DFLdmYWLMI0BezvpP65LykrwEuiShs7xTt1emn69zgwNfusscFV39Ajjc49QFC2RA=="
+# Supabase API - Replace with your actual credentials
+SUPABASE_URL="your_supabase_url"
+SUPABASE_ANON_KEY="your_supabase_anon_key"
+SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_role_key"
+SUPABASE_JWT_SECRET="your_jwt_secret"
 
 # Next.js Environment Variables
-NEXT_PUBLIC_SUPABASE_URL="https://cqylpwdcwrssttrtvtov.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="***REMOVED***.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxeWxwd2Rjd3Jzc3R0cnR2dG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNDc0MTcsImV4cCI6MjA2OTkyMzQxN30.-SjQmiFNoDhExLOA_lBz4J57vqbTUryg186uf5h7TWM"
+NEXT_PUBLIC_SUPABASE_URL="your_supabase_url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
 
 # Project Information
-PROJECT_ID="cqylpwdcwrssttrtvtov"
-PROJECT_NAME="supabase-emerald-tree"
+PROJECT_ID="your_project_id"
+PROJECT_NAME="your_project_name"
 `;
 
   try {

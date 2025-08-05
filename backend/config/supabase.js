@@ -6,13 +6,13 @@
 
 const { Client } = require('pg');
 
-// Supabase Configuration
+// Supabase Configuration - using environment variables
 const SUPABASE_CONFIG = {
-  host: 'aws-0-eu-central-1.pooler.supabase.com',
-  database: 'postgres',
-  user: 'postgres.cqylpwdcwrssttrtvtov',
-  password: 'ZeroCall20!@HH##1655&&',
-  port: 6543,
+  host: process.env.POSTGRES_HOST || 'aws-0-eu-central-1.pooler.supabase.com',
+  database: process.env.POSTGRES_DATABASE || 'postgres',
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  port: parseInt(process.env.POSTGRES_PORT || '6543'),
   ssl: { rejectUnauthorized: false }
 };
 
