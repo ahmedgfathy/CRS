@@ -238,8 +238,8 @@ class CompleteMigrationService {
             console.log('\n=== PHASE 3: PROPERTY MIGRATION ===');
             await this.migratePropertiesWithRelationships(allProperties);
             
-            // Phase 4: Migrate rich media
-            console.log('\n=== PHASE 4: RICH MEDIA MIGRATION ===');
+            // Phase 4: Link rich media (keep files in Appwrite storage)
+            console.log('\n=== PHASE 4: MEDIA LINKING ===');
             await this.migrateRichMedia(allProperties);
             
             const endTime = Date.now();
@@ -653,7 +653,7 @@ class CompleteMigrationService {
     }
 
     async migrateRichMedia(properties) {
-        console.log('🖼️ Starting rich media migration...');
+        console.log('🖼️ Starting media linking (keeping files in Appwrite storage)...');
         let imageCount = 0;
         let videoCount = 0;
 
@@ -662,7 +662,7 @@ class CompleteMigrationService {
             
             try {
                 // Get Supabase property ID
-                const { data: supabaseProperty } = await this.supabase
+                const { data: supabaseProperty } = await this.supabase.client
                     .from('properties')
                     .select('id')
                     .eq('appwrite_id', property.$id)
@@ -670,40 +670,45 @@ class CompleteMigrationService {
 
                 if (!supabaseProperty) continue;
 
-                // Migrate images
-                const images = await this.migratePropertyImages(property, supabaseProperty.id);
+                // Link images (keep in Appwrite storage)
+                const images = await this.linkPropertyImages(property, supabaseProperty.id);
                 imageCount += images;
                 
-                // Migrate videos
-                const videos = await this.migratePropertyVideos(property, supabaseProperty.id);
+                // Link videos (keep in Appwrite storage)
+                const videos = await this.linkPropertyVideos(property, supabaseProperty.id);
                 videoCount += videos;
                 
                 if ((i + 1) % 100 === 0) {
-                    console.log(`📊 Processed ${i + 1}/${properties.length} properties for media`);
+                    console.log(`📊 Processed ${i + 1}/${properties.length} properties for media linking`);
                 }
                 
             } catch (error) {
-                console.error(`❌ Error migrating media for ${property.$id}:`, error.message);
+                console.error(`❌ Error linking media for ${property.$id}:`, error.message);
             }
         }
 
-        console.log(`✅ Rich media migration completed: ${imageCount} images, ${videoCount} videos`);
+        console.log(`✅ Media linking completed: ${imageCount} images, ${videoCount} videos linked to Appwrite storage`);
     }
 
-    async migratePropertyImages(appwriteProperty, supabasePropertyId) {
+    async linkPropertyImages(appwriteProperty, supabasePropertyId) {
         const images = this.parseJSON(appwriteProperty.propertyImage);
         if (!images || !Array.isArray(images) || images.length === 0) return 0;
 
+        // Create image records that reference Appwrite storage
         const imageRecords = images.map((image, index) => ({
             property_id: supabasePropertyId,
-            appwrite_file_id: image.id,
-            image_url: image.fileUrl,
+            appwrite_file_id: image.id, // Keep original Appwrite file ID
+            appwrite_bucket_id: 'properties', // Appwrite bucket ID
+            image_url: image.fileUrl, // Direct URL to Appwrite storage
             image_title: `Property Image ${index + 1}`,
             sort_order: index,
-            is_primary: index === 0
+            is_primary: index === 0,
+            storage_provider: 'appwrite', // Mark as Appwrite storage
+            file_size: image.fileSize || null,
+            file_type: image.mimeType || 'image/jpeg'
         }));
 
-        const { error } = await this.supabase
+        const { error } = await this.supabase.client
             .from('property_images')
             .upsert(imageRecords, {
                 onConflict: 'property_id,appwrite_file_id',
@@ -711,26 +716,31 @@ class CompleteMigrationService {
             });
 
         if (error) {
-            console.error('❌ Error inserting images:', error);
+            console.error('❌ Error linking images:', error);
             return 0;
         }
 
         return imageRecords.length;
     }
 
-    async migratePropertyVideos(appwriteProperty, supabasePropertyId) {
+    async linkPropertyVideos(appwriteProperty, supabasePropertyId) {
         const videos = this.parseJSON(appwriteProperty.videos);
         if (!videos || !Array.isArray(videos) || videos.length === 0) return 0;
 
+        // Create video records that reference Appwrite storage or external URLs
         const videoRecords = videos.map((video, index) => ({
             property_id: supabasePropertyId,
             video_url: video.url,
             video_title: video.title || `Property Video ${index + 1}`,
             video_type: this.getVideoType(video.url),
-            sort_order: index
+            sort_order: index,
+            storage_provider: video.url.includes('appwrite') ? 'appwrite' : 'external', // Detect storage
+            appwrite_file_id: video.id || null, // If stored in Appwrite
+            duration: video.duration || null,
+            file_size: video.fileSize || null
         }));
 
-        const { error } = await this.supabase
+        const { error } = await this.supabase.client
             .from('property_videos')
             .upsert(videoRecords, {
                 onConflict: 'property_id,video_url',
@@ -738,7 +748,7 @@ class CompleteMigrationService {
             });
 
         if (error) {
-            console.error('❌ Error inserting videos:', error);
+            console.error('❌ Error linking videos:', error);
             return 0;
         }
 
@@ -756,17 +766,26 @@ class CompleteMigrationService {
         
         try {
             // Check property counts
-            const { count: propertyCount, error: propError } = await this.supabase
+            const { count: propertyCount, error: propError } = await this.supabase.client
                 .from('properties')
                 .select('*', { count: 'exact', head: true });
 
             // Check area counts
-            const { count: areaCount, error: areaError } = await this.supabase
+            const { count: areaCount, error: areaError } = await this.supabase.client
                 .from('areas')
                 .select('*', { count: 'exact', head: true });
 
+            // Check media linking counts
+            const { count: imageCount, error: imageError } = await this.supabase.client
+                .from('property_images')
+                .select('*', { count: 'exact', head: true });
+
+            const { count: videoCount, error: videoError } = await this.supabase.client
+                .from('property_videos')
+                .select('*', { count: 'exact', head: true });
+
             // Check relationship integrity
-            const { count: orphanedCount, error: orphanError } = await this.supabase
+            const { count: orphanedCount, error: orphanError } = await this.supabase.client
                 .from('properties')
                 .select('*', { count: 'exact', head: true })
                 .is('area_id', null);
@@ -774,10 +793,12 @@ class CompleteMigrationService {
             console.log(`📊 VALIDATION RESULTS:`);
             console.log(`   Properties: ${propertyCount} (Expected: 3,228)`);
             console.log(`   Areas: ${areaCount} (Expected: 200+)`);
+            console.log(`   Images linked to Appwrite: ${imageCount}`);
+            console.log(`   Videos linked: ${videoCount}`);
             console.log(`   Properties without area: ${orphanedCount || 0}`);
 
-            // Sample check
-            const { data: sampleProperty } = await this.supabase
+            // Sample check with media
+            const { data: sampleProperty } = await this.supabase.client
                 .from('properties')
                 .select(`
                     property_code,
@@ -786,6 +807,13 @@ class CompleteMigrationService {
                     property_types(type_name),
                     contacts(contact_name, primary_phone)
                 `)
+                .limit(1)
+                .single();
+
+            // Check media linking sample
+            const { data: mediaCheck } = await this.supabase.client
+                .from('property_images')
+                .select('appwrite_file_id, storage_provider, image_url')
                 .limit(1)
                 .single();
 
@@ -798,11 +826,20 @@ class CompleteMigrationService {
                 console.log(`   Contact: ${sampleProperty.contacts?.contact_name || 'N/A'}`);
             }
 
+            if (mediaCheck) {
+                console.log(`\n🖼️ SAMPLE MEDIA LINKING:`);
+                console.log(`   Appwrite File ID: ${mediaCheck.appwrite_file_id}`);
+                console.log(`   Storage Provider: ${mediaCheck.storage_provider}`);
+                console.log(`   Image URL: ${mediaCheck.image_url?.substring(0, 50)}...`);
+            }
+
             const successRate = ((propertyCount / 3228) * 100).toFixed(1);
             console.log(`\n🎯 MIGRATION SUCCESS RATE: ${successRate}%`);
+            console.log(`🔗 MEDIA LINKING: Images and videos remain in Appwrite storage`);
 
             if (successRate >= 95) {
                 console.log('✅ MIGRATION SUCCESSFUL: 95%+ success rate achieved');
+                console.log('✅ MEDIA LINKING: Files remain accessible in Appwrite storage');
             } else {
                 console.log('⚠️ MIGRATION NEEDS REVIEW: Success rate below 95%');
             }
