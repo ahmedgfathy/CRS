@@ -23,10 +23,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Property categories for filtering
 const PROPERTY_CATEGORIES = [
   { id: 'all', name: 'All', icon: 'home' },
-  { id: 'residential', name: 'Residential', icon: 'home-variant' },
-  { id: 'commercial', name: 'Commercial', icon: 'office-building' },
-  { id: 'industrial', name: 'Industrial', icon: 'factory' },
-  { id: 'mixed', name: 'Mixed Use', icon: 'domain' },
+  { id: 'residential', name: 'Residential', icon: 'house' },
+  { id: 'commercial', name: 'Commercial', icon: 'business' },
+  { id: 'industrial', name: 'Industrial', icon: 'precision-manufacturing' },
+  { id: 'mixed', name: 'Mixed Use', icon: 'apartment' },
 ];
 
 export default function PropertiesScreen({ navigation }: any) {
@@ -39,107 +39,105 @@ export default function PropertiesScreen({ navigation }: any) {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  const loadInitialData = async () => {
+  const loadInitialData = async (page = 1, append = false) => {
     try {
-      setLoading(true);
-      
-      // Load both properties and units with their images
-      console.log('🔍 Loading properties and units...');
-      
-      // First try to get units
-      let unitsWithImages = [];
-      try {
-        const { data: unitsData, error: unitsError } = await supabase
-          .from('units')
-          .select(`
-            *,
-            areas(area_name),
-            property_types(type_name),
-            unit_images!inner(
-              image_url,
-              is_primary
-            )
-          `)
-          .eq('unit_images.is_primary', true)
-          .limit(20);
-
-        if (!unitsError && unitsData && unitsData.length > 0) {
-          console.log(`🏠 Found ${unitsData.length} units with images`);
-          unitsWithImages = unitsData.map(unit => ({
-            ...unit,
-            coverImage: {
-              url: unit.unit_images[0]?.image_url,
-              fileId: unit.id
-            },
-            title: unit.unit_title || unit.title || `Unit ${unit.unit_number || unit.id}`,
-            price: unit.unit_price || unit.price,
-            bedrooms: unit.bedrooms || unit.bedroom_count,
-            property_types: unit.property_types || { type_name: unit.unit_type },
-            type: 'unit',
-            category: unit.category || 'residential' // Default category
-          }));
-        }
-      } catch (unitsErr) {
-        console.log('ℹ️ No units table found or error loading units');
+      if (!append) {
+        setLoading(true);
+        setCurrentPage(1);
+        setHasMoreData(true);
       }
+      
+      console.log(`🔍 Loading page ${page} of properties and units...`);
+      
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      let allItems: any[] = [];
 
-      // Load properties with images
+      // Load properties with pagination
       const { data: propertiesData, error: propertiesError } = await supabase
         .from('properties')
         .select(`
-          *,
+          id,
+          title,
+          price,
+          currency,
+          area_id,
+          property_type_id,
+          category,
+          created_at,
           areas(area_name),
           property_types(type_name)
         `)
-        .limit(30)
+        .range(offset, offset + ITEMS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
-      let propertiesFormatted = [];
       if (!propertiesError && propertiesData) {
-        propertiesFormatted = await Promise.all(
-          propertiesData.map(async (property) => {
+        // Get images for properties in batches for better performance
+        const propertiesWithImages = await Promise.all(
+          propertiesData.slice(0, 10).map(async (property) => { // Only get images for first 10
             const coverImage = await appwriteStorage.getPropertyCoverImage(property.id);
             return {
               ...property,
               coverImage,
               type: 'property',
-              category: property.category || 'residential' // Default category
+              category: property.category || 'residential'
             };
           })
         );
+        
+        // Add remaining properties without images initially
+        const remainingProperties = propertiesData.slice(10).map(property => ({
+          ...property,
+          coverImage: null,
+          type: 'property',
+          category: property.category || 'residential'
+        }));
+        
+        allItems = [...propertiesWithImages, ...remainingProperties];
       }
 
-      // Combine properties and units
-      const allItems = [...unitsWithImages, ...propertiesFormatted];
-      setProperties(allItems);
+      // Check if we have more data
+      setHasMoreData(allItems.length === ITEMS_PER_PAGE);
       
-      // Load filter options
-      const { data: areasData } = await supabase
-        .from('areas')
-        .select('id, area_name')
-        .eq('status', 'active')
-        .order('area_name')
-        .limit(20);
+      if (append) {
+        setProperties(prev => [...prev, ...allItems]);
+      } else {
+        setProperties(allItems);
+      }
       
-      setAreas(areasData || []);
-      
-      const { data: typesData } = await supabase
-        .from('property_types')
-        .select('id, type_name')
-        .eq('is_active', true)
-        .order('type_name')
-        .limit(20);
-      
-      setPropertyTypes(typesData || []);
+      // Load filter options only on first load
+      if (page === 1) {
+        const { data: areasData } = await supabase
+          .from('areas')
+          .select('id, area_name')
+          .eq('status', 'active')
+          .order('area_name')
+          .limit(10); // Limit areas for better UX
+        
+        setAreas(areasData || []);
+        
+        const { data: typesData } = await supabase
+          .from('property_types')
+          .select('id, type_name')
+          .eq('is_active', true)
+          .order('type_name')
+          .limit(10); // Limit types for better UX
+        
+        setPropertyTypes(typesData || []);
+      }
       
     } catch (error) {
       console.error('Error loading data:', error);
-      Alert.alert('Error', 'Failed to load properties. Please check your connection.');
+      if (!append) {
+        Alert.alert('Error', 'Failed to load properties. Please check your connection.');
+      }
     } finally {
       setLoading(false);
     }
@@ -147,8 +145,16 @@ export default function PropertiesScreen({ navigation }: any) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadInitialData();
+    await loadInitialData(1, false);
     setRefreshing(false);
+  };
+
+  const loadMoreData = async () => {
+    if (!loading && hasMoreData) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      await loadInitialData(nextPage, true);
+    }
   };
 
   const searchProperties = async () => {
@@ -271,7 +277,7 @@ export default function PropertiesScreen({ navigation }: any) {
     setSelectedArea(null);
     setSelectedType(null);
     setSelectedCategory('all');
-    loadInitialData();
+    loadInitialData(1, false);
   };
 
   // Filter properties based on selected category
@@ -280,9 +286,14 @@ export default function PropertiesScreen({ navigation }: any) {
     return item.category === selectedCategory;
   });
 
-    // Property card component similar to HomeScreen
-  const PropertyCard = ({ property }: { property: any }) => (
-    <View style={styles.propertyCard}>
+  // Optimized Property card component
+  const PropertyCard = React.memo(({ property }: { property: any }) => (
+    <TouchableOpacity
+      style={styles.propertyCard}
+      onPress={() => {
+        console.log('Property selected:', property.id);
+      }}
+    >
       <View style={styles.propertyImageContainer}>
         {property.coverImage?.url ? (
           <Image 
@@ -341,181 +352,19 @@ export default function PropertiesScreen({ navigation }: any) {
           </Text>
         )}
       </View>
-    </View>
-  );
+    </TouchableOpacity>
+  ));
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header with search */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#9CA3AF" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search properties and units..."
-              value={searchText}
-              onChangeText={setSearchText}
-              onSubmitEditing={searchProperties}
-            />
-            {searchText.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchText('')}>
-                <Ionicons name="close-circle" size={20} color="#9CA3AF" />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          <TouchableOpacity style={styles.searchButton} onPress={searchProperties}>
-            <Ionicons name="search" size={18} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Category Filter */}
-        <View style={styles.categorySection}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.categoryScroll}>
-              {PROPERTY_CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryCard,
-                    selectedCategory === category.id && styles.categoryCardActive
-                  ]}
-                  onPress={() => setSelectedCategory(category.id)}
-                >
-                  <View style={[
-                    styles.categoryIcon,
-                    selectedCategory === category.id && styles.categoryIconActive
-                  ]}>
-                    <MaterialIcons 
-                      name={category.icon as any} 
-                      size={20} 
-                      color={selectedCategory === category.id ? 'white' : '#2563EB'} 
-                    />
-                  </View>
-                  <Text style={[
-                    styles.categoryText,
-                    selectedCategory === category.id && styles.categoryTextActive
-                  ]}>
-                    {category.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Area and Type Filters */}
-        <View style={styles.filtersSection}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.filterRow}>
-              {/* Area filters */}
-              {areas.slice(0, 4).map((area) => (
-                <TouchableOpacity
-                  key={`area-${area.id}`}
-                  style={[
-                    styles.filterPill,
-                    selectedArea === area.id && styles.filterPillActive
-                  ]}
-                  onPress={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
-                >
-                  <Text style={[
-                    styles.filterPillText,
-                    selectedArea === area.id && styles.filterPillTextActive
-                  ]}>
-                    📍 {area.area_name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              
-              {/* Type filters */}
-              {propertyTypes.slice(0, 4).map((type) => (
-                <TouchableOpacity
-                  key={`type-${type.id}`}
-                  style={[
-                    styles.filterPill,
-                    selectedType === type.id && styles.filterPillActive
-                  ]}
-                  onPress={() => setSelectedType(selectedType === type.id ? null : type.id)}
-                >
-                  <Text style={[
-                    styles.filterPillText,
-                    selectedType === type.id && styles.filterPillTextActive
-                  ]}>
-                    🏠 {type.type_name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              
-              {/* Clear filters button */}
-              {(selectedArea || selectedType || selectedCategory !== 'all' || searchText) && (
-                <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-                  <Text style={styles.clearButtonText}>Clear All</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Properties Grid */}
-        <View style={styles.propertiesSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {filteredProperties.length} Properties Found
-            </Text>
-            <Text style={styles.resultsSubtext}>
-              {selectedCategory !== 'all' && `${PROPERTY_CATEGORIES.find(c => c.id === selectedCategory)?.name} • `}
-              Properties & Units
-            </Text>
-          </View>
-          
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading properties...</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={filteredProperties}
-              keyExtractor={(item) => `${item.type}-${item.id}`}
-              renderItem={({ item }) => <PropertyCard property={item} />}
-              numColumns={2}
-              columnWrapperStyle={styles.propertyRow}
-              contentContainerStyle={styles.propertiesGrid}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
-                  <Text style={styles.emptyStateText}>
-                    No properties found
-                  </Text>
-                  <Text style={styles.emptyStateSubtext}>
-                    Try adjusting your filters or search terms
-                  </Text>
-                  <TouchableOpacity style={styles.retryButton} onPress={clearFilters}>
-                    <Text style={styles.retryButtonText}>Clear Filters</Text>
-                  </TouchableOpacity>
-                </View>
-              }
-            />
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Search Bar */}
+  // Render header components as FlatList header
+  const renderHeader = () => (
+    <View>
+      {/* Header with search */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#9CA3AF" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search properties..."
+            placeholder="Search properties and units..."
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={searchProperties}
@@ -528,77 +377,148 @@ export default function PropertiesScreen({ navigation }: any) {
         </View>
         
         <TouchableOpacity style={styles.searchButton} onPress={searchProperties}>
-          <Text style={styles.searchButtonText}>Search</Text>
+          <Ionicons name="search" size={18} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* Filter Pills */}
-      <View style={styles.filtersSection}>
-        <FlatList
-          horizontal
-          data={[...areas.slice(0, 5), ...propertyTypes.slice(0, 5)]}
-          keyExtractor={(item) => `${item.id}-${item.area_name || item.type_name}`}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.filterPill,
-                (selectedArea === item.area_name || selectedType === item.type_name) && 
-                styles.filterPillActive
-              ]}
-              onPress={() => {
-                if (item.area_name) {
-                  setSelectedArea(selectedArea === item.area_name ? null : item.area_name);
-                } else if (item.type_name) {
-                  setSelectedType(selectedType === item.type_name ? null : item.type_name);
-                }
-              }}
-            >
-              <Text style={[
-                styles.filterPillText,
-                (selectedArea === item.area_name || selectedType === item.type_name) && 
-                styles.filterPillTextActive
-              ]}>
-                {item.area_name || item.type_name}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-        
-        {(selectedArea || selectedType || searchText) && (
-          <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
-        )}
+      {/* Category Filter - Compact */}
+      <View style={styles.categorySection}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.categoryScroll}>
+            {PROPERTY_CATEGORIES.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryCard,
+                  selectedCategory === category.id && styles.categoryCardActive
+                ]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <MaterialIcons 
+                  name={category.icon as any} 
+                  size={16} 
+                  color={selectedCategory === category.id ? 'white' : '#2563EB'} 
+                />
+                <Text style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive
+                ]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
       </View>
 
-      {/* Properties List */}
-      <FlatList
-        data={properties}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderProperty}
-        contentContainerStyle={styles.propertiesList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="home-outline" size={64} color="#9CA3AF" />
-            <Text style={styles.emptyStateText}>
-              {loading ? 'Loading properties...' : 'No properties found'}
-            </Text>
-            {!loading && (
-              <TouchableOpacity style={styles.retryButton} onPress={loadInitialData}>
-                <Text style={styles.retryButtonText}>Retry</Text>
+      {/* Area and Type Filters */}
+      <View style={styles.filtersSection}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filterRow}>
+            {/* Area filters */}
+            {areas.slice(0, 4).map((area) => (
+              <TouchableOpacity
+                key={`area-${area.id}`}
+                style={[
+                  styles.filterPill,
+                  selectedArea === area.id && styles.filterPillActive
+                ]}
+                onPress={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
+              >
+                <Text style={[
+                  styles.filterPillText,
+                  selectedArea === area.id && styles.filterPillTextActive
+                ]}>
+                  📍 {area.area_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            
+            {/* Type filters */}
+            {propertyTypes.slice(0, 4).map((type) => (
+              <TouchableOpacity
+                key={`type-${type.id}`}
+                style={[
+                  styles.filterPill,
+                  selectedType === type.id && styles.filterPillActive
+                ]}
+                onPress={() => setSelectedType(selectedType === type.id ? null : type.id)}
+              >
+                <Text style={[
+                  styles.filterPillText,
+                  selectedType === type.id && styles.filterPillTextActive
+                ]}>
+                  🏠 {type.type_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            
+            {/* Clear filters button */}
+            {(selectedArea || selectedType || selectedCategory !== 'all' || searchText) && (
+              <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+                <Text style={styles.clearButtonText}>Clear All</Text>
               </TouchableOpacity>
             )}
           </View>
+        </ScrollView>
+      </View>
+
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>
+          {filteredProperties.length} Properties Found
+        </Text>
+        <Text style={styles.resultsSubtext}>
+          {selectedCategory !== 'all' && `${PROPERTY_CATEGORIES.find(c => c.id === selectedCategory)?.name} • `}
+          Properties & Units
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={filteredProperties}
+        keyExtractor={(item) => `${item.type}-${item.id}`}
+        renderItem={({ item }) => <PropertyCard property={item} />}
+        numColumns={2}
+        columnWrapperStyle={styles.propertyRow}
+        contentContainerStyle={styles.propertiesGrid}
+        ListHeaderComponent={renderHeader}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        ListHeaderComponent={
-          properties.length > 0 ? (
-            <Text style={styles.resultsCount}>
-              {properties.length} properties found
+        onEndReached={loadMoreData}
+        onEndReachedThreshold={0.1}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
+            <Text style={styles.emptyStateText}>
+              No properties found
             </Text>
+            <Text style={styles.emptyStateSubtext}>
+              Try adjusting your filters or search terms
+            </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={clearFilters}>
+              <Text style={styles.retryButtonText}>Clear Filters</Text>
+            </TouchableOpacity>
+          </View>
+        }
+        ListFooterComponent={
+          hasMoreData && !loading ? (
+            <View style={styles.loadMoreContainer}>
+              <TouchableOpacity style={styles.loadMoreButton} onPress={loadMoreData}>
+                <Text style={styles.loadMoreText}>Load More Properties</Text>
+              </TouchableOpacity>
+            </View>
+          ) : loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
           ) : null
         }
       />
@@ -656,48 +576,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  searchButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   
   // Category Section
   categorySection: {
-    paddingVertical: 20,
+    paddingVertical: 12,
     backgroundColor: '#fff',
   },
   categoryScroll: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 12,
+    gap: 8,
   },
   categoryCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    minWidth: 80,
+    gap: 6,
   },
   categoryCardActive: {
     backgroundColor: '#2563EB',
     borderColor: '#2563EB',
   },
   categoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#E3F2FD',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
   },
   categoryIconActive: {
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#1E293B',
-    textAlign: 'center',
   },
   categoryTextActive: {
     color: 'white',
@@ -908,6 +832,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  // Legacy styles for old interface
+  propertiesList: {
+    paddingHorizontal: 16,
+  },
+  resultsCount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+
+  // Load More styles
+  loadMoreContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  loadMoreText: {
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
