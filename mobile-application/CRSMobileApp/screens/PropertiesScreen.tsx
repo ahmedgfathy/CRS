@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   blueHeader: {
     backgroundColor: '#2563EB',
     paddingBottom: 15,
-    paddingTop: Platform.OS === 'android' ? 5 : 5,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight ? StatusBar.currentHeight + 5 : 25 : 5,
     ...Platform.select({
       android: {
         elevation: 8,

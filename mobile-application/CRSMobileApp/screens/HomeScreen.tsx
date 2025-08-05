@@ -70,6 +70,8 @@ export default function HomeScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('English');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const sidebarAnimation = useRef(new Animated.Value(-300)).current;
   const flatListRef = useRef<FlatList>(null);
 
@@ -344,6 +346,32 @@ export default function HomeScreen({ navigation }: any) {
     }, 300);
   };
 
+  const handleLanguageSwitch = () => {
+    closeSideMenu();
+    setTimeout(() => {
+      const newLanguage = currentLanguage === 'English' ? 'العربية' : 'English';
+      setCurrentLanguage(newLanguage);
+      Alert.alert(
+        'Language Changed',
+        `Language switched to ${newLanguage}\n\nNote: Full language support will be implemented in the next update.`,
+        [{ text: 'OK', style: 'default' }]
+      );
+    }, 300);
+  };
+
+  const handleThemeSwitch = () => {
+    closeSideMenu();
+    setTimeout(() => {
+      const newMode = !isDarkMode;
+      setIsDarkMode(newMode);
+      Alert.alert(
+        'Theme Changed',
+        `Switched to ${newMode ? 'Dark' : 'Light'} mode\n\nNote: Full theme support will be implemented in the next update.`,
+        [{ text: 'OK', style: 'default' }]
+      );
+    }, 300);
+  };
+
   // Auto-scroll slideshow
   useEffect(() => {
     const interval = setInterval(() => {
@@ -456,11 +484,37 @@ export default function HomeScreen({ navigation }: any) {
               </TouchableOpacity>
 
               {/* Help Button */}
-              <TouchableOpacity style={styles.sidebarItem} onPress={handleHelp}>
+              <TouchableOpacity style={styles.helpSidebarItem} onPress={handleHelp}>
                 <View style={styles.sidebarItemIcon}>
                   <Ionicons name="help-circle-outline" size={24} color="#10B981" />
                 </View>
                 <Text style={styles.sidebarItemText}>Help & Support</Text>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              {/* Language Switcher */}
+              <TouchableOpacity style={styles.languageSidebarItem} onPress={handleLanguageSwitch}>
+                <View style={styles.languageIconContainer}>
+                  <Ionicons name="globe-outline" size={20} color="#3B82F6" />
+                </View>
+                <View style={styles.languageContent}>
+                  <Text style={styles.sidebarItemText}>Language</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              {/* Theme/Dark Mode Switcher */}
+              <TouchableOpacity style={styles.themeSidebarItem} onPress={handleThemeSwitch}>
+                <View style={styles.themeIconContainer}>
+                  <Ionicons 
+                    name={isDarkMode ? "moon" : "sunny"} 
+                    size={20} 
+                    color={isDarkMode ? "#6366F1" : "#F59E0B"} 
+                  />
+                </View>
+                <View style={styles.themeContent}>
+                  <Text style={styles.sidebarItemText}>Theme</Text>
+                </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
@@ -660,7 +714,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#2563EB',
     paddingBottom: 15,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 5 : 5,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight ? StatusBar.currentHeight + 5 : 25 : 5,
     ...Platform.select({
       android: {
         elevation: 8,
@@ -1046,7 +1100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 20,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 30 : 20,
     backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -1071,9 +1125,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F0F9FF',
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#E0F2FE',
+  },
+  helpSidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
   },
   sidebarItemIcon: {
     width: 40,
@@ -1094,6 +1160,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  languageContent: {
+    flex: 1,
+  },
+  languageSidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  languageIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  
+  // Theme Switcher Styles
+  themeSidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  themeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  themeContent: {
+    flex: 1,
   },
   sidebarFooter: {
     paddingHorizontal: 20,
