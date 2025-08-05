@@ -1,0 +1,259 @@
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    REAL ESTATE CRM DATABASE ARCHITECTURE                       │
+│                         Entity Relationship Diagram                            │
+│                              410 Fields • 25+ Tables                           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                              ╔═══════════════════════════════════╗
+                              ║         GEOGRAPHIC HIERARCHY      ║
+                              ╚═══════════════════════════════════╝
+                                              │
+                  ┌─────────────────┬─────────┴─────────┬─────────────────┐
+                  │                 │                   │                 │
+            ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+            │ Countries   │  │  Regions    │  │   Areas     │  │  Compounds  │
+            │─────────────│  │─────────────│  │─────────────│  │─────────────│
+            │ • id (PK)   │  │ • id (PK)   │  │ • id (PK)   │  │ • id (PK)   │
+            │ • name      │──│ • name      │──│ • name      │──│ • name      │
+            │ • code      │  │ • country_id│  │ • region_id │  │ • area_id   │
+            │ • currency  │  │ • code      │  │ • parent_id │  │ • developer │
+            │ • status    │  │ • status    │  │ • type      │  │ • total_units│
+            └─────────────┘  └─────────────┘  │ • coordinates│  │ • amenities │
+                                              │ • status    │  │ • status    │
+                                              └─────────────┘  └─────────────┘
+
+
+                              ╔═══════════════════════════════════╗
+                              ║      PROPERTY CLASSIFICATION      ║
+                              ╚═══════════════════════════════════╝
+                                              │
+                  ┌─────────────────┬─────────┴─────────┬─────────────────┐
+                  │                 │                   │                 │
+         ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+         │ Property        │ │ Property        │ │ Unit            │ │ Property        │
+         │ Categories      │ │ Types           │ │ Types           │ │ Features        │
+         │─────────────────│ │─────────────────│ │─────────────────│ │─────────────────│
+         │ • id (PK)       │ │ • id (PK)       │ │ • id (PK)       │ │ • id (PK)       │
+         │ • name          │─│ • name          │─│ • name          │ │ • name          │
+         │ • name_ar       │ │ • category_id   │ │ • property_type │ │ • name_ar       │
+         │ • parent_id     │ │ • bedroom_count │ │ • description   │ │ • category      │
+         │ • description   │ │ • bathroom_count│ │ • specs         │ │ • description   │
+         │ • status        │ │ • avg_size      │ │ • status        │ │ • icon_class    │
+         └─────────────────┘ │ • status        │ └─────────────────┘ │ • status        │
+                             └─────────────────┘                     └─────────────────┘
+
+
+                              ╔═══════════════════════════════════╗
+                              ║        USER MANAGEMENT SYSTEM     ║
+                              ╚═══════════════════════════════════╝
+                                              │
+                  ┌─────────────────┬─────────┴─────────┬─────────────────┐
+                  │                 │                   │                 │
+            ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+            │ User Roles  │  │ Departments │  │   Teams     │  │Data Access  │
+            │─────────────│  │─────────────│  │─────────────│  │Groups       │
+            │ • id (PK)   │  │ • id (PK)   │  │ • id (PK)   │  │─────────────│
+            │ • role_name │  │ • dept_name │  │ • team_name │  │ • id (PK)   │
+            │ • role_level│  │ • dept_code │  │ • dept_id   │  │ • group_name│
+            │ • permissions│ │ • parent_id │  │ • lead_id   │  │ • group_type│
+            │ • can_manage│  │ • manager_id│  │ • team_type │  │ • rules     │
+            │ • status    │  │ • budget    │  │ • target    │  │ • status    │
+            └─────────────┘  │ • status    │  │ • status    │  └─────────────┘
+                             └─────────────┘  └─────────────┘
+
+                                        ┌─────────────────┐
+                                        │     USERS       │
+                                        │─────────────────│
+                                        │ • id (PK)       │
+                                        │ • user_code     │
+                                        │ • username      │
+                                        │ • email         │
+                                        │ • password_hash │
+                                        │ • first_name    │
+                                        │ • last_name     │
+                                        │ • role_id (FK)  │
+                                        │ • department_id │
+                                        │ • team_id       │
+                                        │ • manager_id    │
+                                        │ • phone_primary │
+                                        │ • employment    │
+                                        │ • access_level  │
+                                        │ • last_login    │
+                                        │ • status        │
+                                        └─────────────────┘
+
+
+                              ╔═══════════════════════════════════╗
+                              ║         CORE BUSINESS ENTITIES    ║
+                              ╚═══════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                 PROPERTIES (Central Entity)                         │
+│─────────────────────────────────────────────────────────────────────────────────────│
+│ • id (PK)                    • bedrooms                  • price                    │
+│ • property_code              • bathrooms                 • price_per_sqm            │
+│ • property_type_id (FK)      • living_rooms              • total_price              │
+│ • unit_type_id (FK)          • total_rooms               • down_payment             │
+│ • category_id (FK)           • built_area                • currency                 │
+│ • area_id (FK)               • land_area                 • payment_type_id (FK)     │
+│ • compound_id (FK)           • garden_area               • listing_status           │
+│ • building                   • roof_area                 • property_status          │
+│ • floor_number               • garage_area               • delivery_date            │
+│ • unit_number                • total_area                • title                    │
+│ • plot_number                • listing_agent_id (FK)     • description              │
+│ • parcel_number              • coordinates               • is_featured              │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                              │
+                                              │ (1:M)
+                                              ▼
+                            ┌─────────────────────────────────┐
+                            │        Property Images          │
+                            │─────────────────────────────────│
+                            │ • id (PK)                       │
+                            │ • property_id (FK)              │
+                            │ • image_url                     │
+                            │ • image_type                    │
+                            │ • is_primary                    │
+                            │ • sort_order                    │
+                            └─────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                   CUSTOMERS                                         │
+│─────────────────────────────────────────────────────────────────────────────────────│
+│ • id (PK)                    • nationality               • customer_type            │
+│ • customer_code              • phone_primary             • customer_segment         │
+│ • first_name                 • phone_secondary           • email_marketing_consent  │
+│ • last_name                  • email                     • sms_marketing_consent    │
+│ • full_name_ar               • whatsapp_number           • newsletter_subscription  │
+│ • title                      • preferred_contact         • do_not_contact           │
+│ • gender                     • best_time_contact         • source_id (FK)           │
+│ • date_of_birth              • language_preference       • assigned_agent_id (FK)   │
+│ • age_range                  • current_address           • created_by (FK)          │
+│ • marital_status             • current_area_id (FK)      • updated_by (FK)          │
+│ • occupation                 • residence_type            • created_at               │
+│ • company_name               • income_level               • updated_at               │
+│ • job_title                  • family_size               • deleted_at               │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                              │
+                                              │ (1:M)
+                                              ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                     LEADS                                          │
+│─────────────────────────────────────────────────────────────────────────────────────│
+│ • id (PK)                    • budget_range_id (FK)      • won_reason               │
+│ • lead_code                  • financing_preapproved     • lost_reason              │
+│ • customer_id (FK)           • bank_name                 • conversion_probability   │
+│ • source_id (FK)             • opportunity_stage         • sales_cycle_days         │
+│ • source_detail              • deal_probability          • satisfaction_rating      │
+│ • campaign_id                • expected_close_date       • feedback                 │
+│ • lead_status_id (FK)        • deal_value                • is_repeat_customer       │
+│ • lead_quality               • commission_value          • lifetime_value           │
+│ • lead_priority              • competitor_properties     • referral_source          │
+│ • lead_score                 • competitive_advantage     • assigned_agent_id (FK)   │
+│ • property_purpose           • objections                • qualifying_agent_id (FK) │
+│ • preferred_property_type    • special_requirements      • created_by (FK)          │
+│ • preferred_area_ids         • first_contact_date        • updated_by (FK)          │
+│ • preferred_bedrooms         • qualification_date        • created_at               │
+│ • budget_min                 • timeline                  • updated_at               │
+│ • budget_max                 • engagement_level          • deleted_at               │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                              │
+                                              │ (1:M)
+                                              ▼
+                            ┌─────────────────────────────────┐
+                            │       Lead Activities           │
+                            │─────────────────────────────────│
+                            │ • id (PK)                       │
+                            │ • lead_id (FK)                  │
+                            │ • activity_type                 │
+                            │ • subject                       │
+                            │ • description                   │
+                            │ • outcome                       │
+                            │ • scheduled_date                │
+                            │ • completed_date                │
+                            │ • agent_id (FK)                 │
+                            └─────────────────────────────────┘
+
+
+                              ╔═══════════════════════════════════╗
+                              ║      RELATIONSHIP TABLES (M:M)    ║
+                              ╚═══════════════════════════════════╝
+
+                ┌───────────────────────────────┐      ┌───────────────────────────────┐
+                │ Property Feature Assignments │      │    User Access Groups         │
+                │───────────────────────────────│      │───────────────────────────────│
+                │ • id (PK)                     │      │ • id (PK)                     │
+                │ • property_id (FK)            │      │ • user_id (FK)                │
+                │ • feature_id (FK)             │      │ • access_group_id (FK)        │
+                │ • feature_value               │      │ • granted_by (FK)             │
+                │ • notes                       │      │ • granted_at                  │
+                │ • created_at                  │      │ • expires_at                  │
+                └───────────────────────────────┘      │ • status                      │
+                                                       └───────────────────────────────┘
+
+
+                              ╔═══════════════════════════════════╗
+                              ║       AUDIT & SECURITY SYSTEM    ║
+                              ╚═══════════════════════════════════╝
+
+        ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+        │   Entity History    │  │ User Activity Log   │  │  Security Events    │
+        │─────────────────────│  │─────────────────────│  │─────────────────────│
+        │ • id (PK)           │  │ • id (PK)           │  │ • id (PK)           │
+        │ • entity_type       │  │ • user_id (FK)      │  │ • event_type        │
+        │ • entity_id         │  │ • activity_type     │  │ • severity          │
+        │ • field_name        │  │ • entity_type       │  │ • user_id (FK)      │
+        │ • old_value         │  │ • entity_id         │  │ • ip_address        │
+        │ • new_value         │  │ • description       │  │ • description       │
+        │ • change_type       │  │ • ip_address        │  │ • additional_data   │
+        │ • changed_by (FK)   │  │ • session_id        │  │ • resolved          │
+        │ • changed_at        │  │ • created_at        │  │ • resolved_by (FK)  │
+        │ • ip_address        │  └─────────────────────┘  │ • created_at        │
+        └─────────────────────┘                           └─────────────────────┘
+
+
+                              ╔═══════════════════════════════════╗
+                              ║        LOOKUP TABLES (112)       ║
+                              ╚═══════════════════════════════════╝
+
+      ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+      │Lead Sources │ │Lead Statuses│ │Budget Ranges│ │Payment Types│ │ ... 108     │
+      │─────────────│ │─────────────│ │─────────────│ │─────────────│ │ More Tables │
+      │ • id (PK)   │ │ • id (PK)   │ │ • id (PK)   │ │ • id (PK)   │ │─────────────│
+      │ • name      │ │ • name      │ │ • name      │ │ • method    │ │ Reference   │
+      │ • name_ar   │ │ • name_ar   │ │ • name_ar   │ │ • method_ar │ │ Data for    │
+      │ • type      │ │ • type      │ │ • min_amount│ │ • terms     │ │ Dropdown    │
+      │ • cost      │ │ • order     │ │ • max_amount│ │ • fee       │ │ Lists &     │
+      │ • tracking  │ │ • active    │ │ • currency  │ │ • status    │ │ Categories  │
+      │ • status    │ │ • color     │ │ • status    │ └─────────────┘ └─────────────┘
+      └─────────────┘ │ • status    │ └─────────────┘
+                      └─────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              RELATIONSHIP SUMMARY                                  │
+│─────────────────────────────────────────────────────────────────────────────────────│
+│ • Countries (1) → Regions (M) → Areas (M) → Compounds (M)                          │
+│ • Property Categories (1) → Property Types (M) → Unit Types (M)                    │
+│ • User Roles (1) → Users (M) → Departments (1) → Teams (M)                         │
+│ • Areas (1) → Properties (M) → Property Images (M)                                 │
+│ • Customers (1) → Leads (M) → Lead Activities (M)                                  │
+│ • Users (1) → Properties (M) [as listing agent]                                    │
+│ • Users (1) → Leads (M) [as assigned agent]                                        │
+│ • Properties (M) ↔ Property Features (M) [Many-to-Many via junction table]        │
+│ • Users (M) ↔ Access Groups (M) [Many-to-Many via junction table]                 │
+│                                                                                     │
+│ TOTAL: 410 Fields • 25+ Main Tables • 112 Lookup Tables • 150+ Relationships     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                             IMPLEMENTATION NOTES                                   │
+│─────────────────────────────────────────────────────────────────────────────────────│
+│ 1. All foreign keys have proper indexes for performance                            │
+│ 2. Audit triggers automatically track changes to critical fields                   │
+│ 3. Row-level security implemented via user access groups                           │
+│ 4. Full-text search enabled on title, description, and name fields                │
+│ 5. Spatial indexes on coordinates for mapping functionality                        │
+│ 6. JSON columns used for flexible data (amenities, permissions, rules)            │
+│ 7. Character set: utf8mb4 for full Unicode support (Arabic/English)               │
+│ 8. Engine: InnoDB for ACID compliance and foreign key support                      │
+└─────────────────────────────────────────────────────────────────────────────────────┘

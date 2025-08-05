@@ -1,0 +1,1677 @@
+# ═══════════════════════════════════════════════════════════════════════════════════
+#                          REAL ESTATE DATABASE COLUMN HEADERS ANALYSIS
+# ═══════════════════════════════════════════════════════════════════════════════════
+# Total: 139 unique headers from 10 CSV files and 38 XLSX files
+# Classification: STATIC (unique reference values) vs VARIABLE (data that changes per property)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               LOCATION & GEOGRAPHY GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+  8. Area                          # STATIC - Geographic area names (New Cairo, Maadi, etc.) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: areas(id, area_name, region_id, description, status)
+ 55. Location                      # VARIABLE - Specific location names/addresses | TEXT FIELD | HISTORY_TRACKED
+ 56. Map Location                  # VARIABLE - GPS coordinates or map references | TEXT FIELD | HISTORY_TRACKED
+ 88. Regions                       # STATIC - Region names (Cairo, Giza, Alexandria) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: regions(id, region_name, country_id, code, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               PROPERTY IDENTIFICATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 19. COMPOUND                      # STATIC - Compound/development names should be unique | DROPDOWN LIST | HISTORY_TRACKED | TABLE: compounds(id, compound_name, area_id, developer_id, amenities, status)
+ 31. Development Name              # STATIC - Same as compound, unique development names | DROPDOWN LIST | HISTORY_TRACKED | TABLE: developments(id, development_name, area_id, developer_id, phase, status)
+ 11. Building                      # VARIABLE - Building names should be unique within compounds | TEXT FIELD | HISTORY_TRACKED
+ 67. Parcel name                   # STATIC - Unique parcel identifiers | DROPDOWN LIST | HISTORY_TRACKED | TABLE: parcels(id, parcel_name, parcel_number, compound_id, area_sqm, status)
+ 68. Parcel No.                    # STATIC - Parcel number identifier | DROPDOWN LIST | HISTORY_TRACKED | TABLE: parcel_numbers(id, parcel_number, parcel_id, legal_reference, status)
+136. Plot Number                  # VARIABLE - Unique plot identifier (رقم القطعة) | TEXT FIELD | HISTORY_TRACKED
+ 79. Property Name                 # VARIABLE - Property project names | TEXT FIELD | HISTORY_TRACKED
+ 81. Property Number               # VARIABLE - Unique property identifiers | TEXT FIELD | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               PROPERTY CLASSIFICATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 77. Property Category             # STATIC - Categories like Villa, Apartment, Townhouse | DROPDOWN LIST | HISTORY_TRACKED | TABLE: property_categories(id, category_name, description, icon, sort_order)
+ 84. Property Type                 # STATIC - Types like Studio, 1BR, 2BR, Penthouse | DROPDOWN LIST | HISTORY_TRACKED | TABLE: property_types(id, type_name, category_id, bedroom_count, description)
+126. Unit Type                     # STATIC - Unit type classifications | DROPDOWN LIST | HISTORY_TRACKED | TABLE: unit_types(id, unit_type_name, property_type_id, description, specifications)
+ 15. CATEGORY                      # STATIC - Property category classification | DROPDOWN LIST | HISTORY_TRACKED | TABLE: categories(id, category_name, parent_id, description, status)
+118. Type                          # STATIC - Type classification | DROPDOWN LIST | HISTORY_TRACKED | TABLE: types(id, type_name, category_id, description, status)
+119. type                          # STATIC - Same as Type | DROPDOWN LIST | HISTORY_TRACKED | TABLE: types(id, type_name, category_id, description, status)
+120. Type Sheet                    # STATIC - Sheet type classification | DROPDOWN LIST | HISTORY_TRACKED | TABLE: type_sheets(id, sheet_type_name, template_id, fields, status)
+123. Unit For                      # STATIC - Unit purpose (Sale/Rent) | RADIO BUTTONS | HISTORY_TRACKED | TABLE: unit_purposes(id, purpose_name, description, status)
+133. Unit Offered For              # STATIC - Sale/Rent classification (الوحدة معروضة للـ) | RADIO BUTTONS | HISTORY_TRACKED | TABLE: unit_offerings(id, offering_type, description_ar, description_en, status)
+134. Property Division             # STATIC - Villa/Building/Apartment classification (تقسيمه الفيلات - العمارات - الشقق) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: property_divisions(id, division_name, description_ar, description_en, status)
+135. Compound Location             # STATIC - Inside/Outside compound (داخل كمبوند / خارج كمبوند) | RADIO BUTTONS | HISTORY_TRACKED | TABLE: compound_locations(id, location_type, description_ar, description_en, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               UNIT SPECIFICATIONS GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+  7. Apt No                        # VARIABLE - Apartment numbers vary per unit | TEXT FIELD | HISTORY_TRACKED
+ 38. Floor No.                     # VARIABLE - Floor numbers (1, 2, 3, Ground, etc.) | NUMBER FIELD | HISTORY_TRACKED
+124. Unit NO                       # VARIABLE - Unit numbers | TEXT FIELD | HISTORY_TRACKED
+  9. Bathroom                      # VARIABLE - Number of bathrooms (1, 2, 3, etc.) | NUMBER FIELD | HISTORY_TRACKED
+ 10. Bedroom                       # VARIABLE - Number of bedrooms (1, 2, 3, 4, etc.) | NUMBER FIELD | HISTORY_TRACKED
+ 54. Living                        # VARIABLE - Living room count or area | NUMBER FIELD | HISTORY_TRACKED
+ 91. ROOMS                         # VARIABLE - Total room count | NUMBER FIELD | HISTORY_TRACKED
+ 95. sales rooms                   # VARIABLE - Number of sales rooms | NUMBER FIELD | HISTORY_TRACKED
+112. The Floors                    # VARIABLE - Floor count or description | NUMBER FIELD | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AREA & MEASUREMENTS GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 41. Garden Area                   # VARIABLE - Garden area measurements | NUMBER FIELD | HISTORY_TRACKED
+ 47. Land area                     # VARIABLE - Land area measurements | NUMBER FIELD | HISTORY_TRACKED
+ 48. Land-Garden                   # VARIABLE - Combined land and garden area | NUMBER FIELD | HISTORY_TRACKED
+ 90. Roof Area                     # VARIABLE - Roof area measurements | NUMBER FIELD | HISTORY_TRACKED
+ 93. Sales Area                    # VARIABLE - Saleable area measurements | NUMBER FIELD | HISTORY_TRACKED
+104. SPACE                         # VARIABLE - Total space/area measurements | NUMBER FIELD | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               PROPERTY FEATURES & AMENITIES GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 39. Garage                        # STATIC - Yes/No or garage type options | CHECKBOX / DROPDOWN LIST | HISTORY_TRACKED | TABLE: garage_types(id, garage_type, capacity, description, status)
+ 40. Garden                        # STATIC - Yes/No or garden type options | CHECKBOX / DROPDOWN LIST | HISTORY_TRACKED | TABLE: garden_types(id, garden_type, size_category, description, status)
+ 96. Security                      # STATIC - Security features (24/7, Gated, etc.) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: security_features(id, security_type, description, level, status)
+107. Swimming Pool                 # STATIC - Yes/No or pool type options | CHECKBOX / DROPDOWN LIST | HISTORY_TRACKED | TABLE: pool_types(id, pool_type, size_category, description, status)
+111. terraces                      # STATIC - Yes/No or terrace type options | CHECKBOX / DROPDOWN LIST | HISTORY_TRACKED | TABLE: terrace_types(id, terrace_type, size_category, description, status)
+122. UNIT FACILITIES               # STATIC - Standardized facility options | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: unit_facilities(id, facility_name, category, description, status)
+138. Unit Features                 # STATIC - Standardized unit features (ممبزات الوحده) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: unit_features(id, feature_name, description_ar, description_en, status)
+ 34. Facilities Compound           # STATIC - Compound facility types | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: compound_facilities(id, facility_name, category, description, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               PRICING & FINANCIAL GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 74. Price                         # VARIABLE - Property prices | CURRENCY FIELD | HISTORY_TRACKED
+116. Total Price                   # VARIABLE - Total property prices | CURRENCY FIELD | HISTORY_TRACKED
+125. Unit Price                    # VARIABLE - Price per unit/sqm | CURRENCY FIELD | HISTORY_TRACKED
+102. Sold Unit Price               # VARIABLE - Final sale prices | CURRENCY FIELD | HISTORY_TRACKED
+109. Take Price                    # VARIABLE - Asking/take price | CURRENCY FIELD | HISTORY_TRACKED
+ 18. Commission                    # VARIABLE - Commission amounts vary per deal | CURRENCY FIELD | HISTORY_TRACKED
+ 27. Deposit                       # VARIABLE - Deposit amounts | CURRENCY FIELD | HISTORY_TRACKED
+ 32. Down Payment                  # VARIABLE - Down payment amounts | CURRENCY FIELD | HISTORY_TRACKED
+ 45. Installment                   # VARIABLE - Monthly installment amounts | CURRENCY FIELD | HISTORY_TRACKED
+ 69. Payment                       # VARIABLE - Payment amounts | CURRENCY FIELD | HISTORY_TRACKED
+ 66. Paid Every                    # VARIABLE - Payment frequency | DROPDOWN LIST | HISTORY_TRACKED
+ 70. Payment Type                  # STATIC - Payment method types | DROPDOWN LIST | HISTORY_TRACKED | TABLE: payment_types(id, payment_method, description, terms, status)
+117. Transfer fees                 # VARIABLE - Transfer cost amounts | CURRENCY FIELD | HISTORY_TRACKED
+ 17. Club - Maintenance            # VARIABLE - Maintenance fees | CURRENCY FIELD | HISTORY_TRACKED
+ 22. currency                      # STATIC - Currency type (EGP, USD, EUR) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: currencies(id, currency_code, currency_name, symbol, exchange_rate)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               PROPERTY STATUS & LIFECYCLE GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+105. status                        # VARIABLE - Property status (Available, Sold, Reserved) | DROPDOWN LIST | HISTORY_TRACKED
+106. STATUS                        # VARIABLE - Property status | DROPDOWN LIST | HISTORY_TRACKED
+ 37. Finished                      # STATIC - Finishing level (Core & Shell, Semi-finished, Fully finished) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: finishing_levels(id, level_name, description, specifications, status)
+ 46. is_featured                   # VARIABLE - Featured property flag (Yes/No) | CHECKBOX | HISTORY_TRACKED
+101. sold date                     # VARIABLE - Sale completion dates | DATE PICKER | HISTORY_TRACKED
+ 26. Delivery date                 # VARIABLE - Property delivery dates | DATE PICKER | HISTORY_TRACKED
+137. Rented From                   # VARIABLE - Rental start date (مؤجرة من) | DATE PICKER | HISTORY_TRACKED
+ 89. Rent To                       # VARIABLE - Rental end dates | DATE PICKER | HISTORY_TRACKED
+129. Year                          # VARIABLE - Year of construction or listing | YEAR PICKER | HISTORY_TRACKED
+ 71. Phase                         # STATIC - Development phase names | DROPDOWN LIST | HISTORY_TRACKED | TABLE: development_phases(id, phase_name, phase_number, description, status)
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               CONTACT INFORMATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 59. Mobile No                     # VARIABLE - Contact phone numbers | PHONE FIELD | HISTORY_TRACKED
+ 60. Mobile No.                    # VARIABLE - Mobile phone numbers | PHONE FIELD | HISTORY_TRACKED
+ 72. Phone                         # VARIABLE - Phone numbers | PHONE FIELD | HISTORY_TRACKED
+110. Tel                           # VARIABLE - Telephone numbers | PHONE FIELD | HISTORY_TRACKED
+ 75. Primary Email                 # VARIABLE - Email addresses | EMAIL FIELD | HISTORY_TRACKED
+ 62. Name                          # VARIABLE - Contact/client names | TEXT FIELD | HISTORY_TRACKED
+ 97. sender_name                   # VARIABLE - Message sender names | TEXT FIELD | HISTORY_TRACKED
+ 98. sender_phone                  # VARIABLE - Sender phone numbers | PHONE FIELD | HISTORY_TRACKED
+ 99. sender_phone_2                # VARIABLE - Secondary sender phones | PHONE FIELD | HISTORY_TRACKED
+100. Sheet Mobile No               # VARIABLE - Spreadsheet mobile references | PHONE FIELD | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               SALES & AGENT INFORMATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+  6. Agent                         # STATIC - Agent names/IDs should be unique identifiers | DROPDOWN LIST | HISTORY_TRACKED | TABLE: agents(id, agent_name, employee_id, department_id, contact_info, status)
+ 43. Handler                       # STATIC - Handler/agent names | DROPDOWN LIST | HISTORY_TRACKED | TABLE: handlers(id, handler_name, agent_id, specialization, contact_info, status)
+ 82. Property Offered By           # STATIC - Developer/seller names | DROPDOWN LIST | HISTORY_TRACKED | TABLE: developers(id, developer_name, company_type, contact_info, projects, status)
+ 92. Sales                         # VARIABLE - Sales status/amounts | CURRENCY FIELD / DROPDOWN LIST | HISTORY_TRACKED
+ 94. Sales representatives         # STATIC - Sales rep names | DROPDOWN LIST | HISTORY_TRACKED | TABLE: sales_representatives(id, rep_name, agent_id, territory, performance, status)
+ 13. Sales Notes                   # VARIABLE - Sales notes and comments | TEXT AREA | HISTORY_TRACKED
+130. Zain House Sales Notes        # VARIABLE - Zain House specific notes | TEXT AREA | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               COMMUNICATION & ACTIVITY GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+131. Call Updates                  # VARIABLE - Call history updates (ابديت المكالمات) | TEXT AREA | HISTORY_TRACKED
+132. Activity                      # VARIABLE - Activity status/notes (النشاط) | TEXT AREA | HISTORY_TRACKED
+ 14. Call Action                   # VARIABLE - Call action items | TEXT AREA | HISTORY_TRACKED
+ 49. LAST CALL                     # VARIABLE - Last call date/time | DATETIME PICKER | HISTORY_TRACKED
+ 50. Last Follow in                # VARIABLE - Follow-up dates | DATE PICKER | HISTORY_TRACKED
+ 57. message                       # VARIABLE - Message content | TEXT AREA | HISTORY_TRACKED
+ 58. message_backup                # VARIABLE - Backup message content | TEXT AREA | HISTORY_TRACKED
+ 64. NOTE                          # VARIABLE - General notes | TEXT AREA | HISTORY_TRACKED
+127. Update unit                   # VARIABLE - Unit update flags | CHECKBOX | HISTORY_TRACKED
+ 63. need ubdate                   # VARIABLE - Update requirements flag | CHECKBOX | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               MEDIA & DOCUMENTATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 73. PHOTO                         # VARIABLE - Photo references/links | FILE UPLOAD | HISTORY_TRACKED
+ 78. Property Image                # VARIABLE - Image file references | FILE UPLOAD | HISTORY_TRACKED
+113. thumbnail_path                # SYSTEM - Thumbnail file path | HIDDEN FIELD | NO_HISTORY
+ 53. Links PDF Details and Photos  # VARIABLE - File links | URL FIELD / FILE UPLOAD | HISTORY_TRACKED
+ 28. Description                   # VARIABLE - Property descriptions (text) | TEXT AREA | HISTORY_TRACKED
+ 76. Property                      # VARIABLE - Property descriptions | TEXT AREA | HISTORY_TRACKED
+115. title                         # VARIABLE - Property titles | TEXT FIELD | HISTORY_TRACKED
+ 30. Details Units                 # VARIABLE - Unit detail descriptions | TEXT AREA | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               DATE & TIME TRACKING GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 20. Created Time                  # VARIABLE - Timestamp of record creation | DATETIME PICKER | HISTORY_TRACKED
+ 21. created_at                    # SYSTEM - Creation timestamp | HIDDEN FIELD | NO_HISTORY
+ 61. Modified Time                 # VARIABLE - Last modification timestamp | DATETIME PICKER | HISTORY_TRACKED
+128. updated_at                    # SYSTEM - Last update timestamp | HIDDEN FIELD | NO_HISTORY
+ 25. deleted_at                    # SYSTEM - Deletion timestamp | HIDDEN FIELD | NO_HISTORY
+ 51. Last Modified By              # VARIABLE - User who last modified | TEXT FIELD | HISTORY_TRACKED
+114. time                          # VARIABLE - Time stamps | TIME PICKER | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               SYSTEM & METADATA GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+ 44. id                            # SYSTEM - Unique record identifier | HIDDEN FIELD | NO_HISTORY
+121. unique_id                     # SYSTEM - Unique identifier | HIDDEN FIELD | NO_HISTORY
+ 85. property_id                   # SYSTEM - Property unique ID | HIDDEN FIELD | NO_HISTORY
+ 35. file_path                     # SYSTEM - File location reference | HIDDEN FIELD | NO_HISTORY
+ 36. file_source                   # SYSTEM - Data source reference | HIDDEN FIELD | NO_HISTORY
+ 83. Property Source               # STATIC - Data source references | DROPDOWN LIST | HISTORY_TRACKED | TABLE: property_sources(id, source_name, source_type, description, status)
+ 52. line_number                   # SYSTEM - Line reference number | HIDDEN FIELD | NO_HISTORY
+103. sort_order                    # SYSTEM - Sorting order number | HIDDEN FIELD | NO_HISTORY
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               LEAD QUALIFICATION & SCORING GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+139. Lead Status                   # VARIABLE - Lead pipeline status (New, Contacted, Qualified, Lost, Converted) | DROPDOWN LIST | HISTORY_TRACKED
+140. Lead Score                    # VARIABLE - Lead qualification score (1-100) | NUMBER FIELD | HISTORY_TRACKED
+141. Lead Quality                  # STATIC - Lead quality rating (Hot, Warm, Cold, Unqualified) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: lead_qualities(id, quality_name, score_range, description, color_code)
+142. Lead Source                   # STATIC - Lead generation source (Website, Referral, Cold Call, Social Media, Walk-in) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: lead_sources(id, source_name, source_type, cost_per_lead, tracking_code)
+143. Lead Source Detail            # VARIABLE - Specific source details (Facebook Ad, Google Search, Friend Referral) | TEXT FIELD | HISTORY_TRACKED
+144. Lead Priority                 # STATIC - Lead priority level (High, Medium, Low, Urgent) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: lead_priorities(id, priority_name, priority_level, response_time, status)
+145. Budget Range                  # STATIC - Customer budget category (Under 1M, 1-3M, 3-5M, 5M+) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: budget_ranges(id, range_name, min_amount, max_amount, currency_id)
+146. Timeline                      # STATIC - Purchase timeline (Immediate, 1-3 months, 3-6 months, 6+ months) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: purchase_timelines(id, timeline_name, days_range, priority_score, status)
+147. Decision Authority            # STATIC - Decision making role (Decision Maker, Influencer, User, Gatekeeper) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: decision_authorities(id, authority_name, influence_level, description, status)
+148. Qualification Date            # VARIABLE - Date when lead was qualified | DATE PICKER | HISTORY_TRACKED
+149. Qualifying Agent              # STATIC - Agent who qualified the lead | DROPDOWN LIST | HISTORY_TRACKED | TABLE: agents(id, agent_name, employee_id, department_id, contact_info, status)
+150. Disqualification Reason       # STATIC - Reason for lead disqualification (Budget, Timeline, No Interest) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: disqualification_reasons(id, reason_name, category, description, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               CUSTOMER DEMOGRAPHICS & PROFILE GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+151. Customer Type                 # STATIC - Customer category (Individual, Investor, Corporate, Expatriate) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: customer_types(id, type_name, category, description, special_requirements)
+152. Age Range                     # STATIC - Customer age group (25-30, 31-40, 41-50, 51-60, 60+) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: age_ranges(id, range_name, min_age, max_age, marketing_segment)
+153. Gender                        # STATIC - Customer gender (Male, Female, Not Specified) | RADIO BUTTONS | HISTORY_TRACKED | TABLE: genders(id, gender_name, description, status)
+154. Marital Status                # STATIC - Marital status (Single, Married, Divorced, Widowed) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: marital_statuses(id, status_name, description, impact_on_buying)
+155. Family Size                   # VARIABLE - Number of family members | NUMBER FIELD | HISTORY_TRACKED
+156. Children Count                # VARIABLE - Number of children | NUMBER FIELD | HISTORY_TRACKED
+157. Occupation                    # VARIABLE - Customer occupation/profession | TEXT FIELD | HISTORY_TRACKED
+158. Company Name                  # VARIABLE - Employer/company name | TEXT FIELD | HISTORY_TRACKED
+159. Job Title                     # VARIABLE - Professional title/position | TEXT FIELD | HISTORY_TRACKED
+160. Income Level                  # STATIC - Monthly income range (Under 10K, 10-25K, 25-50K, 50K+) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: income_levels(id, level_name, min_income, max_income, currency_id)
+161. Nationality                   # STATIC - Customer nationality | DROPDOWN LIST | HISTORY_TRACKED | TABLE: nationalities(id, nationality_name, country_code, visa_requirements, status)
+162. Current Address               # VARIABLE - Current residential address | TEXT AREA | HISTORY_TRACKED
+163. Current Location Area         # STATIC - Current area of residence | DROPDOWN LIST | HISTORY_TRACKED | TABLE: areas(id, area_name, region_id, description, status)
+164. Residence Type                # STATIC - Current housing type (Rent, Own, Family Home) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: residence_types(id, type_name, ownership_type, description, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               CUSTOMER PREFERENCES & REQUIREMENTS GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+165. Property Purpose             # STATIC - Purchase purpose (Primary Residence, Investment, Vacation Home) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: property_purposes(id, purpose_name, description, tax_implications, status)
+166. Preferred Property Type      # STATIC - Desired property type (Villa, Apartment, Townhouse, Studio) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: property_types(id, type_name, category_id, bedroom_count, description)
+167. Preferred Areas              # STATIC - Desired locations/areas | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: areas(id, area_name, region_id, description, status)
+168. Preferred Bedrooms           # STATIC - Desired bedroom count (Studio, 1BR, 2BR, 3BR, 4BR+) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: bedroom_counts(id, bedroom_count, description, target_segment)
+169. Preferred Size Range         # STATIC - Desired area range (Under 100sqm, 100-150sqm, 150-200sqm, 200sqm+) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: size_ranges(id, range_name, min_sqm, max_sqm, category)
+170. Max Budget                   # VARIABLE - Maximum budget amount | CURRENCY FIELD | HISTORY_TRACKED
+171. Min Budget                   # VARIABLE - Minimum budget amount | CURRENCY FIELD | HISTORY_TRACKED
+172. Payment Method Preference    # STATIC - Preferred payment (Cash, Mortgage, Installments, Company Loan) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: payment_methods(id, method_name, terms, interest_rate, requirements)
+173. Financing Pre-approval       # STATIC - Mortgage pre-approval status (Yes, No, In Progress) | RADIO BUTTONS | HISTORY_TRACKED | TABLE: pre_approval_statuses(id, status_name, description, validity_period)
+174. Bank Name                    # VARIABLE - Financing bank/institution | TEXT FIELD | HISTORY_TRACKED
+175. Special Requirements         # VARIABLE - Specific needs/requirements | TEXT AREA | HISTORY_TRACKED
+176. Deal Breakers                # VARIABLE - Absolute requirements/restrictions | TEXT AREA | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               SALES OPPORTUNITY & PIPELINE GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+177. Opportunity Stage            # VARIABLE - Sales stage (Prospect, Proposal, Negotiation, Verbal Agreement, Closed) | DROPDOWN LIST | HISTORY_TRACKED
+178. Deal Probability             # VARIABLE - Probability of closing (10%, 25%, 50%, 75%, 90%) | DROPDOWN LIST | HISTORY_TRACKED
+179. Expected Close Date          # VARIABLE - Projected closing date | DATE PICKER | HISTORY_TRACKED
+180. Deal Value                   # VARIABLE - Estimated transaction value | CURRENCY FIELD | HISTORY_TRACKED
+181. Commission Value             # VARIABLE - Expected commission amount | CURRENCY FIELD | HISTORY_TRACKED
+182. Competitor Properties        # VARIABLE - Competing properties customer is considering | TEXT AREA | HISTORY_TRACKED
+183. Competitor Agents            # VARIABLE - Other agents/companies customer is working with | TEXT FIELD | HISTORY_TRACKED
+184. Our Competitive Advantage    # VARIABLE - Why customer should choose us | TEXT AREA | HISTORY_TRACKED
+185. Objections                   # VARIABLE - Customer concerns/objections | TEXT AREA | HISTORY_TRACKED
+186. Proposal Status              # STATIC - Proposal stage (Not Sent, Sent, Under Review, Accepted, Rejected) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: proposal_statuses(id, status_name, description, next_actions, status)
+187. Proposal Sent Date           # VARIABLE - Date proposal was sent | DATE PICKER | HISTORY_TRACKED
+188. Quote Number                 # VARIABLE - Formal quote/proposal reference | TEXT FIELD | HISTORY_TRACKED
+189. Contract Status              # STATIC - Contract stage (Not Started, Draft, Under Review, Signed, Cancelled) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contract_statuses(id, status_name, description, legal_implications, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               LEAD NURTURING & MARKETING GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+190. Follow-up Frequency          # STATIC - Preferred contact frequency (Daily, Weekly, Bi-weekly, Monthly) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contact_frequencies(id, frequency_name, days_interval, description, status)
+191. Preferred Contact Method     # STATIC - Best contact method (Phone, WhatsApp, Email, SMS, In-Person) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contact_methods(id, method_name, priority, success_rate, cost)
+192. Best Time to Contact         # STATIC - Preferred contact time (Morning, Afternoon, Evening, Weekend) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contact_times(id, time_name, start_hour, end_hour, success_rate)
+193. Language Preference          # STATIC - Communication language (Arabic, English, French) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: languages(id, language_name, language_code, regional_variant, status)
+194. Do Not Contact Flag          # STATIC - Contact restriction (Active, Do Not Call, Do Not Email, Do Not SMS) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contact_restrictions(id, restriction_name, restriction_type, legal_requirements, status)
+195. Email Marketing Status       # STATIC - Email campaign participation (Subscribed, Unsubscribed, Bounced) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: email_statuses(id, status_name, description, action_required, status)
+196. SMS Marketing Status         # STATIC - SMS campaign participation (Subscribed, Unsubscribed, Blocked) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: sms_statuses(id, status_name, description, action_required, status)
+197. Newsletter Subscription      # STATIC - Newsletter subscription status (Yes, No) | CHECKBOX | HISTORY_TRACKED | TABLE: subscription_statuses(id, status_name, description, permissions, status)
+198. Campaign Source              # STATIC - Marketing campaign that generated lead | DROPDOWN LIST | HISTORY_TRACKED | TABLE: campaigns(id, campaign_name, campaign_type, start_date, end_date, budget)
+199. Campaign ID                  # VARIABLE - Specific campaign identifier | TEXT FIELD | HISTORY_TRACKED
+200. Referral Source              # VARIABLE - Who referred this customer | TEXT FIELD | HISTORY_TRACKED
+201. Referral Bonus Paid          # STATIC - Referral bonus payment status (No, Pending, Paid) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: bonus_statuses(id, status_name, description, payment_required, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               CUSTOMER ENGAGEMENT & BEHAVIOR GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+202. Engagement Level             # STATIC - Customer interaction level (High, Medium, Low, Inactive) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: engagement_levels(id, level_name, score_range, description, action_required)
+203. Response Time                # STATIC - Typical response speed (Immediate, Same Day, 1-2 Days, Slow) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: response_times(id, time_name, hours_range, priority_score, status)
+204. Website Visits               # VARIABLE - Number of website visits | NUMBER FIELD | HISTORY_TRACKED
+205. Pages Viewed                 # VARIABLE - Website pages viewed count | NUMBER FIELD | HISTORY_TRACKED
+206. Brochures Downloaded         # VARIABLE - Marketing materials downloaded | TEXT AREA | HISTORY_TRACKED
+207. Virtual Tours Viewed         # VARIABLE - Online property tours viewed | TEXT AREA | HISTORY_TRACKED
+208. Site Visits Count            # VARIABLE - Number of physical property visits | NUMBER FIELD | HISTORY_TRACKED
+209. Properties Viewed            # VARIABLE - List of properties customer has seen | TEXT AREA | HISTORY_TRACKED
+210. Last Website Activity        # VARIABLE - Last online activity date | DATETIME PICKER | HISTORY_TRACKED
+211. Social Media Activity        # VARIABLE - Social media engagement notes | TEXT AREA | HISTORY_TRACKED
+212. WhatsApp Group Member        # STATIC - Member of property WhatsApp groups (Yes, No) | CHECKBOX | HISTORY_TRACKED | TABLE: membership_statuses(id, status_name, description, permissions, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               CONVERSION TRACKING & ANALYTICS GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+213. Lead to Opportunity Date     # VARIABLE - Date lead became opportunity | DATE PICKER | HISTORY_TRACKED
+214. First Contact Date           # VARIABLE - Date of initial contact | DATE PICKER | HISTORY_TRACKED
+215. First Meeting Date           # VARIABLE - Date of first in-person meeting | DATE PICKER | HISTORY_TRACKED
+216. First Property Showing       # VARIABLE - Date of first property viewing | DATE PICKER | HISTORY_TRACKED
+217. Decision Timeline            # VARIABLE - Customer's stated decision timeline | TEXT FIELD | HISTORY_TRACKED
+218. Touch Points Count           # VARIABLE - Total number of interactions | NUMBER FIELD | HISTORY_TRACKED
+219. Sales Cycle Days             # VARIABLE - Days from first contact to close | NUMBER FIELD | HISTORY_TRACKED
+220. Conversion Probability       # VARIABLE - AI/calculated conversion likelihood | NUMBER FIELD | HISTORY_TRACKED
+221. Lost Reason                  # STATIC - Reason for lost opportunity (Price, Competition, Timing, No Need) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: lost_reasons(id, reason_name, category, impact_analysis, prevention_strategy)
+222. Won Reason                   # STATIC - Key factor in winning deal (Price, Service, Location, Agent) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: won_reasons(id, reason_name, success_factor, replication_strategy, status)
+223. Customer Satisfaction        # STATIC - Post-sale satisfaction rating (1-5 stars) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: satisfaction_ratings(id, rating_value, rating_name, description, follow_up_required)
+224. Repeat Customer              # STATIC - Previous customer status (New, Returning, Referral Source) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: customer_statuses(id, status_name, description, loyalty_benefits, status)
+225. Lifetime Value               # VARIABLE - Total customer value potential | CURRENCY FIELD | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT MANAGEMENT & PROFILE GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+226. Agent ID                     # SYSTEM - Unique agent identifier | HIDDEN FIELD | NO_HISTORY
+227. Agent Code                   # STATIC - Agent reference code/number | TEXT FIELD | HISTORY_TRACKED
+228. Agent Full Name              # VARIABLE - Complete agent name (Arabic & English) | TEXT FIELD | HISTORY_TRACKED
+229. Agent Display Name           # VARIABLE - Public display name for marketing | TEXT FIELD | HISTORY_TRACKED
+230. Agent Arabic Name            # VARIABLE - Agent name in Arabic | TEXT FIELD | HISTORY_TRACKED
+231. Agent English Name           # VARIABLE - Agent name in English | TEXT FIELD | HISTORY_TRACKED
+232. Agent Title                  # STATIC - Professional title (Senior Agent, Team Leader, Director) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: agent_titles(id, title_name, hierarchy_level, responsibilities, salary_range)
+233. Agent Level                  # STATIC - Experience level (Junior, Senior, Expert, Master) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: agent_levels(id, level_name, years_required, skills_required, benefits)
+234. Agent Status                 # STATIC - Employment status (Active, Inactive, On Leave, Terminated) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: employment_statuses(id, status_name, description, permissions, payroll_active)
+235. Agent Type                   # STATIC - Agent category (Internal, External, Partner, Freelance) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: agent_types(id, type_name, employment_terms, commission_structure, benefits)
+236. Department                   # STATIC - Department assignment (Sales, Leasing, Commercial, Luxury) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: departments(id, dept_name, dept_head, budget, targets)
+237. Team                         # STATIC - Team assignment within department | DROPDOWN LIST | HISTORY_TRACKED | TABLE: teams(id, team_name, department_id, team_leader, members_count)
+238. Direct Manager               # STATIC - Reporting manager/supervisor | DROPDOWN LIST | HISTORY_TRACKED | TABLE: managers(id, manager_name, agent_id, department_id, reports_count)
+239. Branch Office                # STATIC - Primary office location | DROPDOWN LIST | HISTORY_TRACKED | TABLE: branch_offices(id, office_name, address, region_id, capacity)
+240. Territory Assignment         # STATIC - Geographic territory responsibility | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: territories(id, territory_name, areas_covered, potential_value, status)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT CONTACT & COMMUNICATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+241. Agent Mobile Primary         # VARIABLE - Primary mobile number | PHONE FIELD | HISTORY_TRACKED
+242. Agent Mobile Secondary       # VARIABLE - Secondary mobile number | PHONE FIELD | HISTORY_TRACKED
+243. Agent Office Phone           # VARIABLE - Office direct line | PHONE FIELD | HISTORY_TRACKED
+244. Agent WhatsApp Number        # VARIABLE - WhatsApp business number | PHONE FIELD | HISTORY_TRACKED
+245. Agent Email Primary          # VARIABLE - Primary business email | EMAIL FIELD | HISTORY_TRACKED
+246. Agent Email Secondary        # VARIABLE - Secondary/personal email | EMAIL FIELD | HISTORY_TRACKED
+247. Agent Social Media LinkedIn  # VARIABLE - LinkedIn profile URL | URL FIELD | HISTORY_TRACKED
+248. Agent Social Media Facebook  # VARIABLE - Facebook business page | URL FIELD | HISTORY_TRACKED
+249. Agent Social Media Instagram # VARIABLE - Instagram business account | URL FIELD | HISTORY_TRACKED
+250. Agent Website                # VARIABLE - Personal agent website | URL FIELD | HISTORY_TRACKED
+251. Agent Business Card          # VARIABLE - Digital business card link | URL FIELD | HISTORY_TRACKED
+252. Agent Profile Photo          # VARIABLE - Professional headshot | FILE UPLOAD | HISTORY_TRACKED
+253. Agent Logo                   # VARIABLE - Personal brand logo | FILE UPLOAD | HISTORY_TRACKED
+254. Preferred Contact Method     # STATIC - Agent's preferred communication (Phone, WhatsApp, Email) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contact_methods(id, method_name, priority, success_rate, cost)
+255. Available Hours From         # VARIABLE - Work start time | TIME PICKER | HISTORY_TRACKED
+256. Available Hours To           # VARIABLE - Work end time | TIME PICKER | HISTORY_TRACKED
+257. Weekend Availability         # STATIC - Weekend work availability (Yes, No, Flexible) | RADIO BUTTONS | HISTORY_TRACKED | TABLE: availability_types(id, availability_name, description, extra_compensation)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT SPECIALIZATION & EXPERTISE GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+258. Property Specialization      # STATIC - Property type expertise (Residential, Commercial, Industrial) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: property_specializations(id, specialization_name, training_required, certification_needed, market_demand)
+259. Area Expertise               # STATIC - Geographic area specialization | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: area_expertise(id, area_name, region_id, market_knowledge_level, performance_bonus)
+260. Price Range Expertise        # STATIC - Price segment focus (Budget, Mid-range, Luxury, Ultra-luxury) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: price_range_expertise(id, range_name, min_price, max_price, commission_rate)
+261. Client Type Specialization   # STATIC - Customer segment focus (First-time buyers, Investors, Expatriates) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: client_specializations(id, client_type, special_requirements, success_rate, training_needed)
+262. Service Type                 # STATIC - Service offerings (Sales, Rentals, Property Management, Consulting) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: service_types(id, service_name, license_required, commission_structure, training_hours)
+263. Language Skills              # STATIC - Languages spoken (Arabic, English, French, German, etc.) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: languages(id, language_name, language_code, proficiency_level, market_advantage)
+264. Certifications               # VARIABLE - Professional certifications and licenses | TEXT AREA | HISTORY_TRACKED
+265. Years of Experience          # VARIABLE - Total years in real estate | NUMBER FIELD | HISTORY_TRACKED
+266. Real Estate License Number   # VARIABLE - Official license/registration number | TEXT FIELD | HISTORY_TRACKED
+267. License Expiry Date          # VARIABLE - License renewal date | DATE PICKER | HISTORY_TRACKED
+268. Education Background         # VARIABLE - Educational qualifications | TEXT AREA | HISTORY_TRACKED
+269. Previous Experience          # VARIABLE - Prior work experience details | TEXT AREA | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT PERFORMANCE & METRICS GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+270. Commission Rate              # VARIABLE - Agent commission percentage | NUMBER FIELD | HISTORY_TRACKED
+271. Sales Target Monthly         # VARIABLE - Monthly sales target amount | CURRENCY FIELD | HISTORY_TRACKED
+272. Sales Target Quarterly       # VARIABLE - Quarterly sales target | CURRENCY FIELD | HISTORY_TRACKED
+273. Sales Target Annual          # VARIABLE - Annual sales target | CURRENCY FIELD | HISTORY_TRACKED
+274. Current Month Sales          # VARIABLE - Sales achieved this month | CURRENCY FIELD | HISTORY_TRACKED
+275. Current Quarter Sales        # VARIABLE - Sales achieved this quarter | CURRENCY FIELD | HISTORY_TRACKED
+276. Current Year Sales           # VARIABLE - Sales achieved this year | CURRENCY FIELD | HISTORY_TRACKED
+277. Total Career Sales           # VARIABLE - Total lifetime sales | CURRENCY FIELD | HISTORY_TRACKED
+278. Active Listings Count        # VARIABLE - Current property listings | NUMBER FIELD | HISTORY_TRACKED
+279. Active Leads Count           # VARIABLE - Current lead pipeline | NUMBER FIELD | HISTORY_TRACKED
+280. Conversion Rate              # VARIABLE - Lead to sale conversion percentage | NUMBER FIELD | HISTORY_TRACKED
+281. Average Deal Size            # VARIABLE - Average transaction value | CURRENCY FIELD | HISTORY_TRACKED
+282. Customer Satisfaction Rating # VARIABLE - Average client satisfaction score | NUMBER FIELD | HISTORY_TRACKED
+283. Performance Rating           # STATIC - Management performance rating (Excellent, Good, Average, Poor) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: performance_ratings(id, rating_name, score_range, bonus_eligibility, improvement_plan)
+284. Last Performance Review      # VARIABLE - Date of last performance review | DATE PICKER | HISTORY_TRACKED
+285. Next Performance Review      # VARIABLE - Scheduled next review date | DATE PICKER | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT EMPLOYMENT & COMPENSATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+286. Employment Start Date        # VARIABLE - Date agent joined company | DATE PICKER | HISTORY_TRACKED
+287. Employment End Date          # VARIABLE - Date agent left company (if applicable) | DATE PICKER | HISTORY_TRACKED
+288. Contract Type                # STATIC - Employment contract type (Full-time, Part-time, Freelance, Contract) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: contract_types(id, contract_name, hours_per_week, benefits_included, termination_notice)
+289. Salary Base                  # VARIABLE - Base salary amount | CURRENCY FIELD | HISTORY_TRACKED
+290. Salary Currency             # STATIC - Currency for compensation (EGP, USD, EUR) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: currencies(id, currency_code, currency_name, symbol, exchange_rate)
+291. Benefits Package             # STATIC - Benefits included (Health, Dental, Transport, Housing) | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: benefits_packages(id, package_name, benefits_included, cost_to_company, eligibility)
+292. Vacation Days Entitled       # VARIABLE - Annual vacation days | NUMBER FIELD | HISTORY_TRACKED
+293. Vacation Days Taken          # VARIABLE - Vacation days used this year | NUMBER FIELD | HISTORY_TRACKED
+294. Sick Days Taken              # VARIABLE - Sick days used this year | NUMBER FIELD | HISTORY_TRACKED
+295. Training Budget              # VARIABLE - Annual training allowance | CURRENCY FIELD | HISTORY_TRACKED
+296. Equipment Provided           # STATIC - Company equipment assigned | MULTI-SELECT CHECKBOXES | HISTORY_TRACKED | TABLE: equipment_types(id, equipment_name, cost, replacement_cycle, maintenance_required)
+297. Car Allowance                # VARIABLE - Monthly car allowance | CURRENCY FIELD | HISTORY_TRACKED
+298. Phone Allowance              # VARIABLE - Monthly phone allowance | CURRENCY FIELD | HISTORY_TRACKED
+299. Marketing Budget             # VARIABLE - Monthly marketing budget | CURRENCY FIELD | HISTORY_TRACKED
+300. Emergency Contact Name       # VARIABLE - Emergency contact person | TEXT FIELD | HISTORY_TRACKED
+301. Emergency Contact Phone      # VARIABLE - Emergency contact number | PHONE FIELD | HISTORY_TRACKED
+302. Emergency Contact Relation   # VARIABLE - Relationship to emergency contact | TEXT FIELD | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT TRAINING & DEVELOPMENT GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+303. Training Completed           # VARIABLE - Completed training courses | TEXT AREA | HISTORY_TRACKED
+304. Training In Progress         # VARIABLE - Current training programs | TEXT AREA | HISTORY_TRACKED
+305. Training Planned             # VARIABLE - Scheduled future training | TEXT AREA | HISTORY_TRACKED
+306. Mentorship Program           # STATIC - Mentorship participation (Mentor, Mentee, None) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: mentorship_programs(id, program_name, duration_months, requirements, benefits)
+307. Mentor Assigned              # STATIC - Assigned mentor (for new agents) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: mentors(id, mentor_name, agent_id, specialization, mentees_capacity)
+308. Mentees Assigned             # VARIABLE - Agents being mentored | TEXT AREA | HISTORY_TRACKED
+309. Skills Assessment Score      # VARIABLE - Latest skills evaluation score | NUMBER FIELD | HISTORY_TRACKED
+310. Knowledge Test Score         # VARIABLE - Latest knowledge test result | NUMBER FIELD | HISTORY_TRACKED
+311. Product Knowledge Level      # STATIC - Product expertise level (Basic, Intermediate, Advanced, Expert) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: knowledge_levels(id, level_name, requirements, training_hours, certification)
+312. Market Knowledge Level       # STATIC - Market expertise level (Basic, Intermediate, Advanced, Expert) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: market_knowledge_levels(id, level_name, areas_covered, assessment_criteria, update_frequency)
+313. Technology Proficiency       # STATIC - Tech skills level (Basic, Intermediate, Advanced, Expert) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: tech_proficiency_levels(id, level_name, tools_required, training_needed, certification)
+314. Career Development Plan      # VARIABLE - Career progression roadmap | TEXT AREA | HISTORY_TRACKED
+315. Goal Setting                 # VARIABLE - Personal and professional goals | TEXT AREA | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               USER MANAGEMENT & AUTHENTICATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+316. User ID                      # SYSTEM - Unique user identifier | HIDDEN FIELD | NO_HISTORY
+317. Username                     # VARIABLE - Unique username for login | TEXT FIELD | HISTORY_TRACKED
+318. User Email                   # VARIABLE - User email address for login and communication | EMAIL FIELD | HISTORY_TRACKED
+319. Password Hash                # SYSTEM - Encrypted password storage | HIDDEN FIELD | NO_HISTORY
+320. User First Name              # VARIABLE - User's first name | TEXT FIELD | HISTORY_TRACKED
+321. User Last Name               # VARIABLE - User's last name | TEXT FIELD | HISTORY_TRACKED
+322. User Phone                   # VARIABLE - User contact phone number | PHONE FIELD | HISTORY_TRACKED
+323. User Profile Image           # VARIABLE - User profile picture | FILE UPLOAD | HISTORY_TRACKED
+324. User Is Active               # VARIABLE - User account active status | CHECKBOX | HISTORY_TRACKED
+325. User Is Verified             # VARIABLE - Email verification status | CHECKBOX | HISTORY_TRACKED
+326. Email Verified At            # VARIABLE - Date email was verified | DATETIME PICKER | HISTORY_TRACKED
+327. Last Login                   # VARIABLE - Last login timestamp | DATETIME PICKER | HISTORY_TRACKED
+328. Login Attempts               # VARIABLE - Failed login attempt counter | NUMBER FIELD | HISTORY_TRACKED
+329. Account Locked Until         # VARIABLE - Account lock expiration time | DATETIME PICKER | HISTORY_TRACKED
+330. Password Reset Token         # SYSTEM - Password reset security token | HIDDEN FIELD | NO_HISTORY
+331. Password Reset Expires       # SYSTEM - Password reset token expiration | HIDDEN FIELD | NO_HISTORY
+332. User Created At              # SYSTEM - User account creation timestamp | HIDDEN FIELD | NO_HISTORY
+333. User Updated At              # SYSTEM - Last user account update | HIDDEN FIELD | NO_HISTORY
+334. User Created By              # STATIC - Who created this user account | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, email)
+335. User Updated By              # STATIC - Who last updated this user account | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, email)
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               USER ROLES & PERMISSIONS GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+336. User Role                    # STATIC - User role assignment (Sole Admin, Owner, Manager, Team Lead, Agent, Individual) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: user_roles(id, role_name, role_display_name, hierarchy_level, permissions)
+337. Role Display Name            # STATIC - User-friendly role name | DROPDOWN LIST | HISTORY_TRACKED | TABLE: user_roles(id, role_display_name, role_description, hierarchy_level)
+338. Role Description             # STATIC - Role responsibilities description | DROPDOWN LIST | HISTORY_TRACKED | TABLE: user_roles(id, role_description, permissions, max_team_size)
+339. Hierarchy Level              # STATIC - User hierarchy level (1=Sole Admin, 2=Owner, 3=Manager, 4=Team Lead, 5=Agent, 6=Individual) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: hierarchy_levels(id, level_number, level_name, description, authority_scope)
+340. Is System Role               # VARIABLE - Whether role has system-level permissions | CHECKBOX | HISTORY_TRACKED
+341. Can Create Users             # VARIABLE - Permission to create new users | CHECKBOX | HISTORY_TRACKED
+342. Can Manage Users             # VARIABLE - Permission to edit/delete users | CHECKBOX | HISTORY_TRACKED
+343. Can View All Data            # VARIABLE - Permission to see all system data | CHECKBOX | HISTORY_TRACKED
+344. Can Edit All Data            # VARIABLE - Permission to modify all system data | CHECKBOX | HISTORY_TRACKED
+345. Can Delete Data              # VARIABLE - Permission to delete system data | CHECKBOX | HISTORY_TRACKED
+346. Max Team Size                # VARIABLE - Maximum team members this role can manage | NUMBER FIELD | HISTORY_TRACKED
+347. Role Assignment Date         # VARIABLE - When role was assigned to user | DATE PICKER | HISTORY_TRACKED
+348. Role Expires At              # VARIABLE - Role assignment expiration date | DATE PICKER | HISTORY_TRACKED
+349. Role Assigned By             # STATIC - Who assigned this role to user | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+350. Role Is Active               # VARIABLE - Role assignment active status | CHECKBOX | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               USER PERMISSIONS & ACCESS CONTROL GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+351. Permission Name              # STATIC - Specific permission identifier | DROPDOWN LIST | HISTORY_TRACKED | TABLE: permissions(id, permission_name, permission_group, permission_type, description)
+352. Permission Group             # STATIC - Permission category (properties, leads, agents, users, reports, system) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: permission_groups(id, group_name, group_description, resource_scope)
+353. Permission Type              # STATIC - Operation type (create, read, update, delete, execute) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: permission_types(id, type_name, type_description, security_level)
+354. Resource Name                # STATIC - Target resource/table name | DROPDOWN LIST | HISTORY_TRACKED | TABLE: system_resources(id, resource_name, resource_type, access_level_required)
+355. Permission Description       # VARIABLE - Human-readable permission description | TEXT AREA | HISTORY_TRACKED
+356. Is System Permission         # VARIABLE - Whether permission affects system-level operations | CHECKBOX | HISTORY_TRACKED
+357. Permission Granted By        # STATIC - Who granted this permission | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+358. Permission Granted At        # VARIABLE - When permission was granted | DATETIME PICKER | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               DATA ACCESS GROUPS & TEAM MANAGEMENT GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+359. Data Group Name              # VARIABLE - Access group name | TEXT FIELD | HISTORY_TRACKED
+360. Data Group Description       # VARIABLE - Access group purpose description | TEXT AREA | HISTORY_TRACKED
+361. Group Owner                  # STATIC - Manager/Owner who created this group | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+362. Group Type                   # STATIC - Access group category (geographic, property_type, price_range, lead_source, custom) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: group_types(id, type_name, type_description, filtering_rules)
+363. Access Rules                 # VARIABLE - JSON configuration for data filtering rules | TEXT AREA | HISTORY_TRACKED
+364. Group Is Active              # VARIABLE - Data access group active status | CHECKBOX | HISTORY_TRACKED
+365. Group Created At             # VARIABLE - When access group was created | DATETIME PICKER | HISTORY_TRACKED
+366. Group Updated At             # VARIABLE - Last access group modification | DATETIME PICKER | HISTORY_TRACKED
+367. User Group Access Level      # STATIC - User's access level in group (read, write, admin) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: access_levels(id, level_name, level_description, permissions_included)
+368. Group Membership Assigned By # STATIC - Who assigned user to this group | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+369. Group Membership Assigned At # VARIABLE - When user was added to group | DATETIME PICKER | HISTORY_TRACKED
+370. Group Membership Expires At  # VARIABLE - Group membership expiration date | DATETIME PICKER | HISTORY_TRACKED
+371. Group Membership Is Active   # VARIABLE - Group membership active status | CHECKBOX | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AGENT-USER LINKING & INTEGRATION GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+372. Linked Agent ID              # STATIC - Agent profile linked to this user account | DROPDOWN LIST | HISTORY_TRACKED | TABLE: agents(id, agent_name, agent_code, department, team)
+373. Agent Link Status            # VARIABLE - Agent-user link active status | CHECKBOX | HISTORY_TRACKED
+374. Agent Linked At              # VARIABLE - When agent was linked to user account | DATETIME PICKER | HISTORY_TRACKED
+375. Agent Linked By              # STATIC - Who created the agent-user link | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+376. Agent Commission Access      # VARIABLE - Can user view agent commission data | CHECKBOX | HISTORY_TRACKED
+377. Agent Performance Access     # VARIABLE - Can user view agent performance metrics | CHECKBOX | HISTORY_TRACKED
+378. Agent Team Management        # VARIABLE - Can user manage agent team assignments | CHECKBOX | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               AUDIT & SECURITY TRACKING GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+379. Entity History ID            # SYSTEM - Unique audit trail record identifier | HIDDEN FIELD | NO_HISTORY
+380. Entity Type                  # VARIABLE - Type of record being tracked (property, lead, agent, user, customer) | TEXT FIELD | HISTORY_TRACKED
+381. Entity Record ID             # VARIABLE - ID of the specific record being tracked | NUMBER FIELD | HISTORY_TRACKED
+382. Field Name                   # VARIABLE - Name of the field that was changed | TEXT FIELD | HISTORY_TRACKED
+383. Old Value                    # VARIABLE - Previous field value before change | TEXT AREA | HISTORY_TRACKED
+384. New Value                    # VARIABLE - New field value after change | TEXT AREA | HISTORY_TRACKED
+385. Change Type                  # STATIC - Type of operation (create, update, delete, restore) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: change_types(id, type_name, type_description, severity_level)
+386. Changed By User              # STATIC - User who made the change | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+387. Changed At                   # VARIABLE - Timestamp when change occurred | DATETIME PICKER | HISTORY_TRACKED
+388. Change Reason                # VARIABLE - User-provided reason for the change | TEXT FIELD | HISTORY_TRACKED
+389. IP Address                   # VARIABLE - User's IP address when change was made | TEXT FIELD | HISTORY_TRACKED
+390. User Agent                   # VARIABLE - Browser/device information | TEXT AREA | HISTORY_TRACKED
+391. Session ID                   # VARIABLE - User session identifier | TEXT FIELD | HISTORY_TRACKED
+392. Additional Context           # VARIABLE - Extra metadata about the change | TEXT AREA | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               USER ACTIVITY & BEHAVIOR TRACKING GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+393. Activity Type                # STATIC - User activity category (login, logout, view, create, update, delete, export) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: activity_types(id, type_name, type_description, risk_level)
+394. Resource Type                # STATIC - Type of resource accessed (property, lead, report, user, system) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: resource_types(id, type_name, type_description, security_classification)
+395. Resource ID                  # VARIABLE - Specific resource identifier accessed | NUMBER FIELD | HISTORY_TRACKED
+396. Activity Description         # VARIABLE - Detailed description of user activity | TEXT AREA | HISTORY_TRACKED
+397. Activity Data                # VARIABLE - Additional activity-specific information | TEXT AREA | HISTORY_TRACKED
+398. Activity IP Address          # VARIABLE - User's IP address during activity | TEXT FIELD | HISTORY_TRACKED
+399. Activity User Agent          # VARIABLE - Browser/device used for activity | TEXT AREA | HISTORY_TRACKED
+400. Activity Session ID          # VARIABLE - Session identifier for activity | TEXT FIELD | HISTORY_TRACKED
+401. Activity Created At          # VARIABLE - When activity occurred | DATETIME PICKER | HISTORY_TRACKED
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════════
+# ║                               SECURITY EVENTS & MONITORING GROUP
+# ╚══════════════════════════════════════════════════════════════════════════════════
+
+402. Security Event Type         # STATIC - Security incident category (failed_login, account_locked, password_reset, permission_denied, suspicious_activity) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: security_event_types(id, type_name, severity_level, alert_required, response_protocol)
+403. Security Event Description  # VARIABLE - Detailed security event description | TEXT AREA | HISTORY_TRACKED
+404. Security Event Severity     # STATIC - Security threat level (low, medium, high, critical) | DROPDOWN LIST | HISTORY_TRACKED | TABLE: severity_levels(id, level_name, level_description, escalation_required, response_time)
+405. Security Event Resolved     # VARIABLE - Whether security event has been addressed | CHECKBOX | HISTORY_TRACKED
+406. Security Event Resolved By  # STATIC - User who resolved the security event | DROPDOWN LIST | HISTORY_TRACKED | TABLE: users(id, username, first_name, last_name, role)
+407. Security Event Resolved At  # VARIABLE - When security event was resolved | DATETIME PICKER | HISTORY_TRACKED
+408. Security Additional Data    # VARIABLE - Extra security event metadata | TEXT AREA | HISTORY_TRACKED
+409. Security Event Created At   # VARIABLE - When security event was detected | DATETIME PICKER | HISTORY_TRACKED
+410. Security Event IP Address   # VARIABLE - IP address associated with security event | TEXT FIELD | HISTORY_TRACKED
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════
+#                                    SUMMARY & RECOMMENDATIONS
+# ═══════════════════════════════════════════════════════════════════════════════════
+
+## 📊 DATA CLASSIFICATION SUMMARY:
+# • PROPERTY FIELDS: 108 fields (property specifications, pricing, features) → VARIOUS FIELD TYPES
+# • LEAD MANAGEMENT FIELDS: 87 fields (CRM, qualification, demographics, sales pipeline) → VARIOUS FIELD TYPES
+# • AGENT MANAGEMENT FIELDS: 90 fields (agent profiles, performance, employment, training) → VARIOUS FIELD TYPES
+# • USER MANAGEMENT FIELDS: 95 fields (authentication, roles, permissions, security, audit) → VARIOUS FIELD TYPES
+# • STATIC FIELDS: 112 fields (standardized reference values) → DROPDOWN LIST / RADIO BUTTONS / CHECKBOXES
+# • VARIABLE FIELDS: 275 fields (property, customer, agent & user-specific data) → TEXT FIELD / NUMBER FIELD / CURRENCY FIELD / DATE PICKER
+# • SYSTEM FIELDS: 23 fields (database metadata, security tokens, system timestamps) → HIDDEN FIELD
+# • TOTAL FIELDS: 410 fields (108 property + 87 lead management + 90 agent management + 95 user management + 21 location/geography + 9 miscellaneous fields)
+# • HISTORY TRACKING: 387 fields with HISTORY_TRACKED, 23 fields with NO_HISTORY (system metadata and security tokens)
+# • REMOVED: 15 corrupted/duplicate/unnecessary fields cleaned from original dataset
+
+## 🎯 AGENT MANAGEMENT IMPLEMENTATION:
+
+### AGENT PERFORMANCE TRACKING:
+# ✓ SALES METRICS: Real-time tracking of individual and team performance
+# ✓ TARGET MANAGEMENT: Monthly, quarterly, and annual goal setting and monitoring
+# ✓ COMMISSION CALCULATION: Automated commission computation based on sales
+# ✓ RANKING SYSTEM: Agent leaderboards and performance comparisons
+# ✓ PRODUCTIVITY ANALYTICS: Conversion rates, deal velocity, pipeline management
+
+### AGENT RECRUITMENT & ONBOARDING:
+# ✓ TALENT PIPELINE: Recruitment funnel from application to hire
+# ✓ SCREENING PROCESS: Skills assessment, background checks, interviews
+# ✓ ONBOARDING WORKFLOW: Step-by-step new agent orientation process
+# ✓ PROBATION TRACKING: Performance monitoring during probationary period
+# ✓ CERTIFICATION MANAGEMENT: License tracking and renewal reminders
+
+### AGENT DEVELOPMENT & TRAINING:
+# ✓ SKILL GAP ANALYSIS: Identify training needs based on performance data
+# ✓ LEARNING MANAGEMENT: Track training completion and effectiveness
+# ✓ MENTORSHIP PROGRAMS: Pair experienced agents with newcomers
+# ✓ CAREER PATHING: Clear advancement opportunities and requirements
+# ✓ KNOWLEDGE BASE: Centralized training materials and best practices
+
+### AGENT ASSIGNMENT & ROUTING:
+# ✓ LEAD DISTRIBUTION: Automated lead assignment based on specialization
+# ✓ TERRITORY MANAGEMENT: Geographic area assignments and coverage
+# ✓ WORKLOAD BALANCING: Ensure fair distribution of opportunities
+# ✓ EXPERTISE MATCHING: Assign leads based on agent strengths
+# ✓ AVAILABILITY TRACKING: Real-time agent status and scheduling
+
+### AGENT COMMUNICATION & COLLABORATION:
+# ✓ TEAM MESSAGING: Internal communication platform integration
+# ✓ DOCUMENT SHARING: Centralized access to marketing materials and contracts
+# ✓ CALENDAR INTEGRATION: Scheduling and appointment management
+# ✓ MOBILE ACCESS: Agent app for field work and client management
+# ✓ REPORTING TOOLS: Automated performance reports and dashboards
+
+## 🎯 LEAD MANAGEMENT IMPLEMENTATION:
+
+### CRM PIPELINE DESIGN:
+# ✓ LEAD STAGES: New → Contacted → Qualified → Opportunity → Proposal → Negotiation → Closed
+# ✓ LEAD SCORING: Automated scoring based on budget, timeline, engagement, and demographics
+# ✓ LEAD ROUTING: Automatic assignment based on agent expertise, location, and workload
+# ✓ FOLLOW-UP AUTOMATION: Scheduled tasks, reminders, and nurturing sequences
+# ✓ CONVERSION TRACKING: Full funnel analytics from first touch to closed deal
+
+### CUSTOMER SEGMENTATION:
+# ✓ DEMOGRAPHIC SEGMENTS: Age, income, family size, nationality-based grouping
+# ✓ BEHAVIORAL SEGMENTS: Engagement level, response time, property preferences
+# ✓ VALUE SEGMENTS: Budget range, lifetime value potential, purchase timeline
+# ✓ SOURCE SEGMENTS: Lead source performance, campaign effectiveness tracking
+# ✓ STAGE SEGMENTS: Pipeline stage analysis, conversion bottleneck identification
+
+### MARKETING AUTOMATION:
+# ✓ EMAIL CAMPAIGNS: Automated nurturing sequences based on lead behavior
+# ✓ SMS MARKETING: Targeted property alerts and follow-up messages
+# ✓ WHATSAPP INTEGRATION: Automated responses and property sharing
+# ✓ SOCIAL MEDIA TRACKING: Lead engagement across platforms
+# ✓ REFERRAL PROGRAMS: Automated referral tracking and bonus management
+
+## 🎯 HISTORY TRACKING IMPLEMENTATION:
+
+### AUDIT TRAIL DESIGN:
+# ✓ HISTORY_TRACKED: All user-modifiable fields will log changes to property_history table
+# ✓ NO_HISTORY: System metadata fields (IDs, timestamps, file paths) excluded from history
+# ✓ History Table Schema: (property_id, field_name, old_value, new_value, changed_by, changed_at, change_reason)
+# ✓ Trigger-based: Database triggers on UPDATE/INSERT to automatically log all changes
+# ✓ Compliance Ready: Full audit trail for regulatory compliance and data integrity
+
+### CHANGE TRACKING CATEGORIES:
+# ✓ PRICE CHANGES: All financial fields tracked for pricing history analysis
+# ✓ STATUS CHANGES: Property status transitions (Available → Reserved → Sold)
+# ✓ FEATURE UPDATES: Amenities, facilities, and property characteristics
+# ✓ CONTACT CHANGES: Agent assignments, client information updates
+# ✓ LOCATION UPDATES: Address changes, area reassignments
+# ✓ DOCUMENTATION: Photo uploads, description modifications, notes additions
+
+## 🎯 UI FIELD TYPE RECOMMENDATIONS:
+
+### FORM INPUT TYPES ASSIGNED:
+# ✓ DROPDOWN LIST: Geographic areas, property types, agents, static references
+# ✓ RADIO BUTTONS: Binary choices (Sale/Rent, Inside/Outside compound)
+# ✓ MULTI-SELECT CHECKBOXES: Facilities, amenities, features
+# ✓ TEXT FIELD: Names, addresses, identifiers, short descriptions
+# ✓ TEXT AREA: Long descriptions, notes, comments, messages
+# ✓ NUMBER FIELD: Room counts, floor numbers, area measurements
+# ✓ CURRENCY FIELD: All pricing, financial amounts with currency validation
+# ✓ DATE PICKER: Delivery dates, sale dates, rental periods
+# ✓ DATETIME PICKER: Timestamps, call logs, creation times
+# ✓ TIME PICKER: Time-only fields
+# ✓ YEAR PICKER: Construction year, listing year
+# ✓ PHONE FIELD: Mobile numbers, contact phones with validation
+# ✓ EMAIL FIELD: Email addresses with validation
+# ✓ FILE UPLOAD: Photos, documents, media files
+# ✓ URL FIELD: Links, external references
+# ✓ CHECKBOX: Boolean flags, featured status, update requirements
+# ✓ HIDDEN FIELD: System metadata, auto-generated IDs
+
+## 🎯 RECOMMENDATIONS FOR DATA STANDARDIZATION:
+
+### STATIC FIELDS - Create Lookup Tables:
+# ✓ Locations: Areas, Regions, Compounds, Developments
+# ✓ Property Types: Categories, Unit Types, Property Classifications
+# ✓ Features: Amenities, Facilities, Finishing Levels
+# ✓ Agents: Sales Representatives, Handlers, Developers
+# ✓ Payment Methods: Currency Types, Payment Frequencies
+
+### VARIABLE FIELDS - Add Validation Rules:
+# ✓ Numeric Ranges: Prices (min/max), Areas (sqm limits), Room counts
+# ✓ Date Validations: Construction year, Delivery dates, Sale dates
+# ✓ Text Lengths: Descriptions (character limits), Notes, Comments
+# ✓ Phone Formats: Mobile numbers, Contact information standardization
+
+### DATA QUALITY IMPROVEMENTS:
+# ✓ Remove duplicate fields (Mobile No vs Mobile No.)
+# ✓ Standardize naming conventions (consistent capitalization)
+# ✓ Remove corrupted/encoded headers
+# ✓ Translate all Arabic headers to English for system compatibility
+# ✓ Group related fields logically for better database design
+
+### DATABASE DESIGN SUGGESTIONS:
+# ✓ PROPERTY TABLES: Properties, Property_Features, Property_Images, Property_Pricing
+# ✓ LEAD TABLES: Leads, Lead_Qualification, Lead_Preferences, Lead_Activities
+# ✓ CUSTOMER TABLES: Customers, Customer_Demographics, Customer_Interactions
+# ✓ AGENT TABLES: Agents, Agent_Performance, Agent_Training, Agent_Territories
+# ✓ SALES TABLES: Opportunities, Proposals, Contracts, Commissions
+# ✓ MARKETING TABLES: Campaigns, Lead_Sources, Referrals, Marketing_Activities
+# ✓ HR TABLES: Employment, Compensation, Benefits, Performance_Reviews
+# ✓ TRAINING TABLES: Courses, Certifications, Skills_Assessment, Mentorship
+# ✓ LOOKUP TABLES: Areas, Property_Types, Lead_Sources, Departments, Teams
+# ✓ FOREIGN KEYS: Proper relationships between properties, leads, agents, customers, and opportunities
+# ✓ INDEXING: Optimized search on location, price, lead status, agent assignments, performance metrics
+# ✓ AUDIT TRAILS: Complete change tracking for compliance and analytics
+# ✓ HISTORY TABLES: lead_history, opportunity_history, customer_history, agent_history
+# ✓ TRIGGERS: Automated logging, lead scoring updates, follow-up scheduling, performance calculations
+# ✓ VIEWS: Dashboard views for agents, managers, executives, and HR
+# ✓ STORED PROCEDURES: Complex calculations for commissions, bonuses, and performance metrics
+# ✓ SECURITY: Role-based access control for sensitive agent and compensation data
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════
+#                                    DEVELOPER IMPLEMENTATION GUIDE
+# ═══════════════════════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════════════════════
+#                                    DEVELOPER IMPLEMENTATION GUIDE
+# ═══════════════════════════════════════════════════════════════════════════════════
+
+## 📖 README: REAL ESTATE CRM DATABASE ANALYSIS & IMPLEMENTATION GUIDE
+
+### 🎯 OVERVIEW
+This document provides a comprehensive analysis of 300 database fields for a complete Real Estate CRM system.
+The analysis was conducted on WhatsApp chat exports from 48 files (10 CSV + 38 XLSX) containing property data,
+resulting in 139 unique column headers that were expanded into a full 300-field enterprise CRM solution.
+
+### 🔐 USER MANAGEMENT & AUTHENTICATION SYSTEM
+
+#### **USER REGISTRATION & LOGIN ARCHITECTURE**
+```sql
+-- Core Users Table
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    profile_image VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    email_verified_at TIMESTAMP NULL,
+    last_login TIMESTAMP NULL,
+    login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP NULL,
+    password_reset_token VARCHAR(255),
+    password_reset_expires TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (updated_by) REFERENCES users(id),
+    INDEX idx_username (username),
+    INDEX idx_email (email),
+    INDEX idx_active (is_active),
+    INDEX idx_last_login (last_login)
+);
+
+-- User Roles (Hierarchical System)
+CREATE TABLE user_roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(50) UNIQUE NOT NULL,
+    role_display_name VARCHAR(100) NOT NULL,
+    role_description TEXT,
+    hierarchy_level INT NOT NULL,  -- 1=Sole Admin, 2=Owner, 3=Manager, 4=Team Lead, 5=Agent, 6=Individual
+    is_system_role BOOLEAN DEFAULT FALSE,
+    permissions JSON,  -- Detailed permissions object
+    can_create_users BOOLEAN DEFAULT FALSE,
+    can_manage_users BOOLEAN DEFAULT FALSE,
+    can_view_all_data BOOLEAN DEFAULT FALSE,
+    can_edit_all_data BOOLEAN DEFAULT FALSE,
+    can_delete_data BOOLEAN DEFAULT FALSE,
+    max_team_size INT DEFAULT 0,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    INDEX idx_hierarchy (hierarchy_level),
+    INDEX idx_status (status)
+);
+
+-- User Role Assignments (Many-to-Many)
+CREATE TABLE user_role_assignments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    assigned_by BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    UNIQUE KEY unique_user_role (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES user_roles(id),
+    FOREIGN KEY (assigned_by) REFERENCES users(id),
+    INDEX idx_user_active (user_id, is_active),
+    INDEX idx_role_active (role_id, is_active)
+);
+
+-- Agent-User Linking (Optional - for agents who are also system users)
+CREATE TABLE agent_user_links (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNIQUE NOT NULL,
+    agent_id BIGINT UNIQUE NOT NULL,
+    linked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    linked_by BIGINT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE,
+    FOREIGN KEY (linked_by) REFERENCES users(id),
+    INDEX idx_user_agent (user_id, agent_id),
+    INDEX idx_active (is_active)
+);
+```
+
+#### **ROLE-BASED ACCESS CONTROL (RBAC) SYSTEM**
+```sql
+-- Permissions Framework
+CREATE TABLE permissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    permission_name VARCHAR(100) UNIQUE NOT NULL,
+    permission_group VARCHAR(50) NOT NULL,  -- 'properties', 'leads', 'agents', 'users', 'reports'
+    permission_type ENUM('create', 'read', 'update', 'delete', 'execute') NOT NULL,
+    resource_name VARCHAR(100) NOT NULL,  -- table name or specific resource
+    description TEXT,
+    is_system_permission BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Role Permissions (Many-to-Many)
+CREATE TABLE role_permissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_id BIGINT NOT NULL,
+    permission_id BIGINT NOT NULL,
+    granted_by BIGINT NOT NULL,
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_role_permission (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES user_roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id),
+    FOREIGN KEY (granted_by) REFERENCES users(id)
+);
+
+-- Data Access Groups (for managers to control team data access)
+CREATE TABLE data_access_groups (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    group_name VARCHAR(100) NOT NULL,
+    group_description TEXT,
+    owner_id BIGINT NOT NULL,  -- Manager/Owner who created this group
+    group_type ENUM('geographic', 'property_type', 'price_range', 'lead_source', 'custom') NOT NULL,
+    access_rules JSON,  -- Specific rules for data filtering
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id),
+    INDEX idx_owner_active (owner_id, is_active),
+    INDEX idx_type (group_type)
+);
+
+-- User Group Memberships
+CREATE TABLE user_group_memberships (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    group_id BIGINT NOT NULL,
+    access_level ENUM('read', 'write', 'admin') DEFAULT 'read',
+    assigned_by BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    UNIQUE KEY unique_user_group (user_id, group_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES data_access_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id),
+    INDEX idx_user_active (user_id, is_active),
+    INDEX idx_group_level (group_id, access_level)
+);
+```
+
+#### **COMPREHENSIVE AUDIT & HISTORY SYSTEM**
+```sql
+-- Enhanced History Table for All Entities
+CREATE TABLE entity_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    entity_type VARCHAR(50) NOT NULL,  -- 'property', 'lead', 'agent', 'user', 'customer', etc.
+    entity_id BIGINT NOT NULL,
+    field_name VARCHAR(100) NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    change_type ENUM('create', 'update', 'delete', 'restore') NOT NULL,
+    changed_by BIGINT NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    change_reason VARCHAR(255),
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    session_id VARCHAR(100),
+    additional_context JSON,  -- Extra metadata about the change
+    FOREIGN KEY (changed_by) REFERENCES users(id),
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_field (field_name),
+    INDEX idx_date (changed_at),
+    INDEX idx_user (changed_by),
+    INDEX idx_type (change_type)
+);
+
+-- User Activity Logs
+CREATE TABLE user_activity_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    activity_type VARCHAR(50) NOT NULL,  -- 'login', 'logout', 'view', 'create', 'update', 'delete'
+    resource_type VARCHAR(50),  -- 'property', 'lead', 'report', etc.
+    resource_id BIGINT,
+    activity_description TEXT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    session_id VARCHAR(100),
+    activity_data JSON,  -- Additional activity-specific data
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    INDEX idx_user_activity (user_id, activity_type),
+    INDEX idx_resource (resource_type, resource_id),
+    INDEX idx_date (created_at)
+);
+
+-- Security Events Log
+CREATE TABLE security_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    event_type VARCHAR(50) NOT NULL,  -- 'failed_login', 'account_locked', 'password_reset', 'permission_denied'
+    event_description TEXT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+    is_resolved BOOLEAN DEFAULT FALSE,
+    resolved_by BIGINT,
+    resolved_at TIMESTAMP NULL,
+    additional_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (resolved_by) REFERENCES users(id),
+    INDEX idx_user_event (user_id, event_type),
+    INDEX idx_severity (severity),
+    INDEX idx_unresolved (is_resolved, created_at)
+);
+```
+
+#### **PRE-DEFINED USER ROLES & PERMISSIONS**
+```sql
+-- Insert Default Roles
+INSERT INTO user_roles (role_name, role_display_name, role_description, hierarchy_level, is_system_role, can_create_users, can_manage_users, can_view_all_data, can_edit_all_data, can_delete_data, max_team_size) VALUES
+('sole_admin', 'Sole Administrator', 'System owner with full access to everything', 1, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 999),
+('owner', 'Business Owner', 'Business owner with full operational access', 2, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 999),
+('manager', 'Manager', 'Department/regional manager with team oversight', 3, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, 50),
+('team_lead', 'Team Leader', 'Team leader with limited management capabilities', 4, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, 10),
+('senior_agent', 'Senior Sales Agent', 'Experienced agent with extended permissions', 5, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, 0),
+('agent', 'Sales Agent', 'Standard sales agent', 5, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, 0),
+('marketing', 'Marketing Specialist', 'Marketing team member with lead management focus', 5, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, 0),
+('admin_staff', 'Administrative Staff', 'Administrative support with limited access', 6, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, 0),
+('viewer', 'Viewer Only', 'Read-only access to assigned data', 6, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, 0),
+('individual', 'Individual User', 'Personal account with minimal permissions', 6, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 0);
+
+-- Insert Default Permissions
+INSERT INTO permissions (permission_name, permission_group, permission_type, resource_name, description, is_system_permission) VALUES
+-- Property Permissions
+('properties.create', 'properties', 'create', 'properties', 'Create new properties', FALSE),
+('properties.read', 'properties', 'read', 'properties', 'View properties', FALSE),
+('properties.update', 'properties', 'update', 'properties', 'Edit property information', FALSE),
+('properties.delete', 'properties', 'delete', 'properties', 'Delete properties', FALSE),
+('properties.publish', 'properties', 'execute', 'properties', 'Publish/unpublish properties', FALSE),
+
+-- Lead Permissions
+('leads.create', 'leads', 'create', 'leads', 'Create new leads', FALSE),
+('leads.read', 'leads', 'read', 'leads', 'View leads', FALSE),
+('leads.update', 'leads', 'update', 'leads', 'Edit lead information', FALSE),
+('leads.delete', 'leads', 'delete', 'leads', 'Delete leads', FALSE),
+('leads.assign', 'leads', 'execute', 'leads', 'Assign leads to agents', FALSE),
+('leads.qualify', 'leads', 'execute', 'leads', 'Qualify/disqualify leads', FALSE),
+
+-- Agent Permissions
+('agents.create', 'agents', 'create', 'agents', 'Create new agents', FALSE),
+('agents.read', 'agents', 'read', 'agents', 'View agent information', FALSE),
+('agents.update', 'agents', 'update', 'agents', 'Edit agent information', FALSE),
+('agents.delete', 'agents', 'delete', 'agents', 'Delete agents', FALSE),
+('agents.performance', 'agents', 'read', 'agents', 'View agent performance metrics', FALSE),
+
+-- User Management Permissions
+('users.create', 'users', 'create', 'users', 'Create new users', TRUE),
+('users.read', 'users', 'read', 'users', 'View user information', TRUE),
+('users.update', 'users', 'update', 'users', 'Edit user information', TRUE),
+('users.delete', 'users', 'delete', 'users', 'Delete users', TRUE),
+('users.roles', 'users', 'execute', 'users', 'Manage user roles', TRUE),
+('users.permissions', 'users', 'execute', 'users', 'Manage user permissions', TRUE),
+
+-- Reporting Permissions
+('reports.view', 'reports', 'read', 'reports', 'View reports', FALSE),
+('reports.create', 'reports', 'create', 'reports', 'Create custom reports', FALSE),
+('reports.export', 'reports', 'execute', 'reports', 'Export report data', FALSE),
+('reports.advanced', 'reports', 'execute', 'reports', 'Access advanced analytics', FALSE),
+
+-- System Permissions
+('system.settings', 'system', 'update', 'system', 'Modify system settings', TRUE),
+('system.backup', 'system', 'execute', 'system', 'Create system backups', TRUE),
+('system.logs', 'system', 'read', 'system', 'View system logs', TRUE),
+('system.maintenance', 'system', 'execute', 'system', 'Perform system maintenance', TRUE);
+```
+
+#### **DATA ACCESS CONTROL IMPLEMENTATION**
+```sql
+-- Row-Level Security Views for Properties
+CREATE VIEW user_accessible_properties AS
+SELECT p.*, 
+       CASE 
+           WHEN ur.hierarchy_level <= 2 THEN TRUE  -- Sole Admin, Owner see all
+           WHEN uga.access_level IN ('write', 'admin') THEN TRUE  -- Full access through groups
+           WHEN p.agent_id IN (SELECT agent_id FROM agent_user_links WHERE user_id = @current_user_id) THEN TRUE  -- Own properties
+           WHEN dag.access_rules IS NOT NULL THEN TRUE  -- Group-based access
+           ELSE FALSE
+       END as can_access
+FROM properties p
+LEFT JOIN agent_user_links aul ON p.agent_id = aul.agent_id
+LEFT JOIN user_role_assignments ura ON ura.user_id = @current_user_id AND ura.is_active = TRUE
+LEFT JOIN user_roles ur ON ura.role_id = ur.id
+LEFT JOIN user_group_memberships ugm ON ugm.user_id = @current_user_id AND ugm.is_active = TRUE
+LEFT JOIN data_access_groups dag ON ugm.group_id = dag.id
+LEFT JOIN user_group_memberships uga ON uga.user_id = @current_user_id AND uga.group_id = dag.id
+WHERE (ur.can_view_all_data = TRUE OR 
+       aul.user_id = @current_user_id OR 
+       JSON_EXTRACT(dag.access_rules, CONCAT('$.area_id')) = p.area_id OR
+       JSON_EXTRACT(dag.access_rules, CONCAT('$.property_type_id')) = p.property_type_id);
+
+-- Row-Level Security Views for Leads
+CREATE VIEW user_accessible_leads AS
+SELECT l.*, 
+       CASE 
+           WHEN ur.hierarchy_level <= 2 THEN TRUE  -- Sole Admin, Owner see all
+           WHEN uga.access_level IN ('write', 'admin') THEN TRUE  -- Full access through groups
+           WHEN l.agent_id IN (SELECT agent_id FROM agent_user_links WHERE user_id = @current_user_id) THEN TRUE  -- Own leads
+           WHEN dag.access_rules IS NOT NULL THEN TRUE  -- Group-based access
+           ELSE FALSE
+       END as can_access
+FROM leads l
+LEFT JOIN agent_user_links aul ON l.agent_id = aul.agent_id
+LEFT JOIN user_role_assignments ura ON ura.user_id = @current_user_id AND ura.is_active = TRUE
+LEFT JOIN user_roles ur ON ura.role_id = ur.id
+LEFT JOIN user_group_memberships ugm ON ugm.user_id = @current_user_id AND ugm.is_active = TRUE
+LEFT JOIN data_access_groups dag ON ugm.group_id = dag.id
+LEFT JOIN user_group_memberships uga ON uga.user_id = @current_user_id AND uga.group_id = dag.id;
+```
+
+#### **API AUTHENTICATION & AUTHORIZATION**
+```javascript
+// JWT Token Structure
+const jwtPayload = {
+    user_id: 123,
+    username: 'john.doe',
+    roles: ['agent', 'team_lead'],
+    permissions: [
+        'properties.read',
+        'properties.update',
+        'leads.create',
+        'leads.read',
+        'leads.update'
+    ],
+    data_groups: [1, 3, 5],  // Group IDs user has access to
+    agent_id: 456,  // If linked to an agent
+    hierarchy_level: 4,
+    can_view_all_data: false,
+    session_id: 'uuid-string',
+    exp: 1625097600  // Token expiration
+};
+
+// Middleware for Permission Checking
+function checkPermission(permission, resource_id = null) {
+    return async (req, res, next) => {
+        try {
+            const user = req.user;  // From JWT token
+            
+            // Check if user has the required permission
+            if (!user.permissions.includes(permission)) {
+                return res.status(403).json({ 
+                    error: 'Permission denied',
+                    required_permission: permission 
+                });
+            }
+            
+            // Check data access if resource_id provided
+            if (resource_id && !user.can_view_all_data) {
+                const hasAccess = await checkDataAccess(user, permission.split('.')[0], resource_id);
+                if (!hasAccess) {
+                    return res.status(403).json({ 
+                        error: 'Data access denied',
+                        resource: resource_id 
+                    });
+                }
+            }
+            
+            next();
+        } catch (error) {
+            return res.status(500).json({ error: 'Authorization check failed' });
+        }
+    };
+}
+
+// Data Access Validation
+async function checkDataAccess(user, entity_type, entity_id) {
+    // Sole Admin and Owner have access to everything
+    if (user.hierarchy_level <= 2) return true;
+    
+    // Check if user owns the resource (for agents)
+    if (entity_type === 'properties') {
+        const property = await db.query(
+            'SELECT agent_id FROM properties WHERE id = ?', 
+            [entity_id]
+        );
+        if (property.agent_id === user.agent_id) return true;
+    }
+    
+    // Check group-based access
+    const groupAccess = await db.query(`
+        SELECT COUNT(*) as count FROM user_group_memberships ugm
+        JOIN data_access_groups dag ON ugm.group_id = dag.id
+        WHERE ugm.user_id = ? AND ugm.is_active = TRUE
+        AND JSON_EXTRACT(dag.access_rules, '$.${entity_type}') IS NOT NULL
+    `, [user.user_id]);
+    
+    return groupAccess.count > 0;
+}
+```
+
+#### **CRUD OPERATIONS WITH HISTORY TRACKING**
+```sql
+-- Stored Procedure for Property Creation with History
+DELIMITER //
+CREATE PROCEDURE CreateProperty(
+    IN p_user_id BIGINT,
+    IN p_property_data JSON
+)
+BEGIN
+    DECLARE v_property_id BIGINT;
+    DECLARE v_can_create BOOLEAN DEFAULT FALSE;
+    
+    -- Check if user has permission to create properties
+    SELECT COUNT(*) > 0 INTO v_can_create
+    FROM user_role_assignments ura
+    JOIN role_permissions rp ON ura.role_id = rp.role_id
+    JOIN permissions p ON rp.permission_id = p.id
+    WHERE ura.user_id = p_user_id 
+    AND ura.is_active = TRUE
+    AND p.permission_name = 'properties.create';
+    
+    IF NOT v_can_create THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Permission denied: Cannot create properties';
+    END IF;
+    
+    -- Insert property
+    INSERT INTO properties (
+        compound_id, property_type_id, area_id, agent_id, 
+        price, total_area, bedrooms, bathrooms,
+        created_by
+    ) VALUES (
+        JSON_EXTRACT(p_property_data, '$.compound_id'),
+        JSON_EXTRACT(p_property_data, '$.property_type_id'),
+        JSON_EXTRACT(p_property_data, '$.area_id'),
+        JSON_EXTRACT(p_property_data, '$.agent_id'),
+        JSON_EXTRACT(p_property_data, '$.price'),
+        JSON_EXTRACT(p_property_data, '$.total_area'),
+        JSON_EXTRACT(p_property_data, '$.bedrooms'),
+        JSON_EXTRACT(p_property_data, '$.bathrooms'),
+        p_user_id
+    );
+    
+    SET v_property_id = LAST_INSERT_ID();
+    
+    -- Log the creation in history
+    INSERT INTO entity_history (
+        entity_type, entity_id, field_name, 
+        new_value, change_type, changed_by, change_reason
+    ) VALUES (
+        'property', v_property_id, 'created',
+        JSON_EXTRACT(p_property_data, '$'), 'create', p_user_id, 'Property created'
+    );
+    
+    -- Log user activity
+    INSERT INTO user_activity_logs (
+        user_id, activity_type, resource_type, resource_id,
+        activity_description, activity_data
+    ) VALUES (
+        p_user_id, 'create', 'property', v_property_id,
+        'Created new property', p_property_data
+    );
+    
+    SELECT v_property_id as property_id;
+END //
+DELIMITER ;
+```
+
+#### **IMPLEMENTATION WORKFLOW**
+
+##### **Phase 1: Authentication Setup (Week 1)**
+1. Create user management tables and indexes
+2. Implement JWT-based authentication
+3. Build user registration and login endpoints
+4. Set up password hashing and reset functionality
+5. Create basic role management interface
+
+##### **Phase 2: Authorization Framework (Week 2)**
+1. Implement role-based permission system
+2. Create data access groups functionality
+3. Build permission checking middleware
+4. Set up row-level security views
+5. Test permission enforcement
+
+##### **Phase 3: History & Audit System (Week 3)**
+1. Implement comprehensive history tracking
+2. Create user activity logging
+3. Build security event monitoring
+4. Set up audit trail reports
+5. Test data integrity and compliance
+
+##### **Phase 4: Advanced Features (Week 4)**
+1. Create user management dashboard
+2. Build team and group management tools
+3. Implement advanced reporting with access controls
+4. Add bulk operations with permission checks
+5. Create system administration tools
+
+### 📊 DATA SOURCE ANALYSIS
+**Original Data**: 139 unique headers from WhatsApp property exports
+**Expansion Strategy**: Added 176 fields (87 lead management + 89 agent management) for complete CRM
+**Final Result**: 315-field comprehensive Real Estate CRM database schema
+
+### 🏗️ FIELD CLASSIFICATION SYSTEM
+
+#### **STATIC FIELDS (89 fields)**
+- **Definition**: Reference data with predefined values (dropdown options, radio button choices)
+- **Purpose**: Ensure data consistency, enable reporting, support filtering/searching
+- **Implementation**: Create isolated lookup tables with foreign key relationships
+- **Examples**: Property Types, Areas, Agent Titles, Lead Sources
+- **Table Pattern**: `TABLE: table_name(id, name, description, status)`
+
+#### **VARIABLE FIELDS (217 fields)**
+- **Definition**: Dynamic data that changes per record (property-specific, customer-specific)
+- **Purpose**: Store unique information for each property, lead, customer, or agent
+- **Implementation**: Direct columns in main entity tables
+- **Examples**: Property Prices, Customer Names, Agent Performance Metrics
+
+#### **SYSTEM FIELDS (9 fields)**
+- **Definition**: Database metadata and auto-generated identifiers
+- **Purpose**: System operations, record tracking, technical implementation
+- **Implementation**: Hidden fields, auto-increment IDs, timestamps
+- **Examples**: id, unique_id, created_at, updated_at
+
+### 🔄 HISTORY TRACKING SYSTEM
+
+#### **HISTORY_TRACKED (307 fields)**
+All user-modifiable fields that require audit trail:
+```sql
+CREATE TABLE property_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    entity_type VARCHAR(50) NOT NULL,        -- 'property', 'lead', 'agent', etc.
+    entity_id BIGINT NOT NULL,               -- ID of the modified record
+    field_name VARCHAR(100) NOT NULL,        -- Name of the changed field
+    old_value TEXT,                          -- Previous value
+    new_value TEXT,                          -- New value
+    changed_by BIGINT NOT NULL,              -- User ID who made change
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    change_reason VARCHAR(255),              -- Optional reason for change
+    ip_address VARCHAR(45),                  -- User IP for security
+    user_agent TEXT,                         -- Browser/device info
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_field (field_name),
+    INDEX idx_date (changed_at),
+    INDEX idx_user (changed_by)
+);
+```
+
+#### **NO_HISTORY (8 fields)**
+System metadata excluded from history tracking:
+- Technical fields like `id`, `created_at`, `file_path`
+- Performance optimization for high-frequency updates
+
+### 🗄️ DATABASE ARCHITECTURE
+
+#### **1. CORE ENTITY TABLES**
+```sql
+-- Main Properties Table
+CREATE TABLE properties (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    property_code VARCHAR(50) UNIQUE,
+    compound_id BIGINT,
+    property_type_id BIGINT,
+    area_id BIGINT,
+    agent_id BIGINT,
+    status_id BIGINT,
+    price DECIMAL(15,2),
+    total_area DECIMAL(10,2),
+    bedrooms INT,
+    bathrooms INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    -- Add all 108 property-specific fields here
+    FOREIGN KEY (compound_id) REFERENCES compounds(id),
+    FOREIGN KEY (property_type_id) REFERENCES property_types(id),
+    FOREIGN KEY (area_id) REFERENCES areas(id),
+    FOREIGN KEY (agent_id) REFERENCES agents(id)
+);
+
+-- Leads Management
+CREATE TABLE leads (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    customer_id BIGINT,
+    agent_id BIGINT,
+    lead_source_id BIGINT,
+    lead_status_id BIGINT,
+    lead_quality_id BIGINT,
+    budget_min DECIMAL(15,2),
+    budget_max DECIMAL(15,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Add all 87 lead-specific fields here
+    FOREIGN KEY (customer_id) REFERENCES customers(id),
+    FOREIGN KEY (agent_id) REFERENCES agents(id)
+);
+
+-- Agent Management
+CREATE TABLE agents (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    agent_code VARCHAR(50) UNIQUE,
+    department_id BIGINT,
+    team_id BIGINT,
+    manager_id BIGINT,
+    agent_level_id BIGINT,
+    employment_status_id BIGINT,
+    hire_date DATE,
+    commission_rate DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Add all 90 agent-specific fields here
+    FOREIGN KEY (department_id) REFERENCES departments(id),
+    FOREIGN KEY (team_id) REFERENCES teams(id)
+);
+```
+
+#### **2. LOOKUP TABLES (89 tables)**
+Each STATIC field gets its own lookup table:
+```sql
+-- Example: Property Types Lookup
+CREATE TABLE property_types (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    type_name VARCHAR(100) NOT NULL,
+    category_id BIGINT,
+    bedroom_count INT,
+    description TEXT,
+    sort_order INT DEFAULT 0,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES property_categories(id)
+);
+
+-- Example: Lead Sources Lookup
+CREATE TABLE lead_sources (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    source_name VARCHAR(100) NOT NULL,
+    source_type ENUM('digital', 'traditional', 'referral') NOT NULL,
+    cost_per_lead DECIMAL(10,2),
+    tracking_code VARCHAR(50),
+    conversion_rate DECIMAL(5,2),
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Example: Geographic Areas Lookup
+CREATE TABLE areas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    area_name VARCHAR(100) NOT NULL,
+    region_id BIGINT,
+    description TEXT,
+    avg_price_sqm DECIMAL(10,2),
+    market_trend ENUM('rising', 'stable', 'declining'),
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    FOREIGN KEY (region_id) REFERENCES regions(id)
+);
+```
+
+### 🎨 UI FIELD TYPE MAPPING
+
+#### **Form Control Specifications**
+```javascript
+const fieldTypeMapping = {
+    // Text Inputs
+    'TEXT FIELD': '<input type="text" class="form-control" />',
+    'TEXT AREA': '<textarea class="form-control" rows="4"></textarea>',
+    'EMAIL FIELD': '<input type="email" class="form-control" />',
+    'PHONE FIELD': '<input type="tel" class="form-control" pattern="[0-9+\\-\\s()]+" />',
+    'URL FIELD': '<input type="url" class="form-control" />',
+    
+    // Numeric Inputs
+    'NUMBER FIELD': '<input type="number" class="form-control" step="1" />',
+    'CURRENCY FIELD': '<input type="number" class="form-control" step="0.01" />',
+    
+    // Date/Time Inputs
+    'DATE PICKER': '<input type="date" class="form-control" />',
+    'DATETIME PICKER': '<input type="datetime-local" class="form-control" />',
+    'TIME PICKER': '<input type="time" class="form-control" />',
+    'YEAR PICKER': '<input type="number" class="form-control" min="1900" max="2100" />',
+    
+    // Selection Controls
+    'DROPDOWN LIST': '<select class="form-select"><option>Select...</option></select>',
+    'MULTI-SELECT CHECKBOXES': '<div class="checkbox-group"></div>',
+    'RADIO BUTTONS': '<div class="radio-group"></div>',
+    'CHECKBOX': '<input type="checkbox" class="form-check-input" />',
+    
+    // File Uploads
+    'FILE UPLOAD': '<input type="file" class="form-control" accept="image/*,application/pdf" />',
+    
+    // System Fields
+    'HIDDEN FIELD': '<input type="hidden" />'
+};
+```
+
+### 🔗 RELATIONSHIP MAPPING
+
+#### **Primary Relationships**
+```sql
+-- Property → Agent (Many-to-One)
+ALTER TABLE properties ADD FOREIGN KEY (agent_id) REFERENCES agents(id);
+
+-- Property → Area (Many-to-One)
+ALTER TABLE properties ADD FOREIGN KEY (area_id) REFERENCES areas(id);
+
+-- Lead → Customer (Many-to-One)
+ALTER TABLE leads ADD FOREIGN KEY (customer_id) REFERENCES customers(id);
+
+-- Lead → Agent (Many-to-One)
+ALTER TABLE leads ADD FOREIGN KEY (agent_id) REFERENCES agents(id);
+
+-- Agent → Department (Many-to-One)
+ALTER TABLE agents ADD FOREIGN KEY (department_id) REFERENCES departments(id);
+
+-- Many-to-Many Relationships
+CREATE TABLE property_features (
+    property_id BIGINT,
+    feature_id BIGINT,
+    PRIMARY KEY (property_id, feature_id),
+    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+    FOREIGN KEY (feature_id) REFERENCES unit_features(id)
+);
+
+CREATE TABLE agent_specializations (
+    agent_id BIGINT,
+    specialization_id BIGINT,
+    proficiency_level ENUM('basic', 'intermediate', 'advanced', 'expert'),
+    PRIMARY KEY (agent_id, specialization_id),
+    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE,
+    FOREIGN KEY (specialization_id) REFERENCES property_specializations(id)
+);
+```
+
+### 📈 IMPLEMENTATION PHASES
+
+#### **Phase 1: Core Foundation (Weeks 1-2)**
+1. Create core entity tables: properties, leads, customers, agents
+2. Implement 20 most critical lookup tables (areas, property_types, etc.)
+3. Set up basic CRUD operations
+4. Implement authentication and authorization
+
+#### **Phase 2: CRM Enhancement (Weeks 3-4)**
+1. Add all 87 lead management fields
+2. Implement lead scoring algorithms
+3. Create sales pipeline workflows
+4. Build customer segmentation features
+
+#### **Phase 3: Agent Management (Weeks 5-6)**
+1. Add all 90 agent management fields
+2. Implement performance tracking
+3. Create commission calculation system
+4. Build training and mentorship modules
+
+#### **Phase 4: Advanced Features (Weeks 7-8)**
+1. Complete all 89 lookup tables
+2. Implement full history tracking
+3. Create advanced reporting and analytics
+4. Add marketing automation features
+
+### 🔒 SECURITY CONSIDERATIONS
+
+#### **Data Protection**
+```sql
+-- Role-based Access Control
+CREATE TABLE user_roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(50) NOT NULL,
+    permissions JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sensitive Data Encryption
+ALTER TABLE agents 
+ADD COLUMN salary_encrypted VARBINARY(255),
+ADD COLUMN commission_encrypted VARBINARY(255);
+
+-- Audit Logging
+CREATE TABLE security_audit (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    action VARCHAR(100),
+    table_name VARCHAR(100),
+    record_id BIGINT,
+    ip_address VARCHAR(45),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 📊 PERFORMANCE OPTIMIZATION
+
+#### **Indexing Strategy**
+```sql
+-- Search Performance
+CREATE INDEX idx_properties_search ON properties(area_id, property_type_id, price, status_id);
+CREATE INDEX idx_leads_search ON leads(agent_id, lead_status_id, created_at);
+CREATE INDEX idx_agents_search ON agents(department_id, employment_status_id, agent_level_id);
+
+-- Reporting Performance
+CREATE INDEX idx_properties_reports ON properties(agent_id, created_at, price);
+CREATE INDEX idx_leads_reports ON leads(lead_source_id, created_at, budget_max);
+CREATE INDEX idx_agents_reports ON agents(department_id, hire_date, commission_rate);
+
+-- Foreign Key Performance
+CREATE INDEX idx_properties_compound ON properties(compound_id);
+CREATE INDEX idx_leads_customer ON leads(customer_id);
+CREATE INDEX idx_agents_manager ON agents(manager_id);
+```
+
+### 🚀 DEPLOYMENT CHECKLIST
+
+#### **Database Setup**
+- [ ] Create production database with proper character set (utf8mb4)
+- [ ] Set up database user with minimal required permissions
+- [ ] Configure connection pooling for optimal performance
+- [ ] Set up automated backups with point-in-time recovery
+
+#### **Security Configuration**
+- [ ] Enable SSL connections to database
+- [ ] Configure firewall rules for database access
+- [ ] Set up audit logging for all data modifications
+- [ ] Implement data masking for sensitive fields in non-production
+
+#### **Monitoring & Maintenance**
+- [ ] Set up database performance monitoring
+- [ ] Configure alerts for slow queries and high resource usage
+- [ ] Schedule regular maintenance tasks (index optimization, statistics updates)
+- [ ] Plan for data archiving and purging strategies
+
+### 📝 FIELD REFERENCE QUICK GUIDE
+
+#### **By Field Type Count**
+- **Properties**: 108 fields (specifications, pricing, features, status)
+- **Lead Management**: 87 fields (qualification, demographics, pipeline)
+- **Agent Management**: 90 fields (profile, performance, employment, training)
+- **System Metadata**: 9 fields (IDs, timestamps, file paths)
+- **Corrupted/Duplicates**: 21 fields (requires cleanup)
+
+#### **By Data Classification**
+- **STATIC (89 fields)**: Require lookup tables with foreign keys
+- **VARIABLE (217 fields)**: Direct columns in main entity tables
+- **SYSTEM (9 fields)**: Hidden fields for technical operations
+
+#### **By UI Implementation**
+- **Form Controls**: 16 different input types mapped to field requirements
+- **Validation Rules**: Numeric ranges, date validations, text length limits
+- **Multi-language Support**: Arabic/English descriptions for user-facing fields
+
+### 🎯 SUCCESS METRICS
+
+#### **Implementation KPIs**
+- Database response time < 200ms for standard queries
+- 99.9% uptime for production database
+- Zero data loss with proper backup/recovery procedures
+- Complete audit trail for all data modifications
+
+#### **Business KPIs**
+- Lead conversion rate tracking across all 87 lead fields
+- Agent performance metrics across all 90 agent fields
+- Property sale velocity using 108 property tracking fields
+- Customer satisfaction scoring with full demographic insights
+
+---
+
+**Document Version**: 1.0
+**Last Updated**: August 3, 2025
+**Created By**: Real Estate CRM Analysis System
+**Total Implementation Time**: 8 weeks (estimated)
+**Database Complexity**: Enterprise-level (315 fields, 89 lookup tables)
+**Recommended Team Size**: 3-4 developers (1 DB specialist, 2 backend, 1 frontend)
+# ✓ REPORTS: Pipeline reports, conversion analytics, agent performance metrics
+# ✓ PERMISSIONS: Role-based access (Agent, Manager, Admin, Marketing)
+# ✓ API INTEGRATION: CRM, email marketing, SMS, social media platforms
+
+## 📈 CRM ANALYTICS & REPORTING:
+
+### LEAD PERFORMANCE METRICS:
+# ✓ CONVERSION RATES: Lead to Opportunity, Opportunity to Sale conversion percentages
+# ✓ LEAD QUALITY: Source performance, qualification accuracy, scoring effectiveness
+# ✓ SALES CYCLE: Average days from lead to close, stage duration analysis
+# ✓ PIPELINE HEALTH: Stage distribution, bottleneck identification, velocity tracking
+# ✓ AGENT PERFORMANCE: Individual conversion rates, lead handling efficiency
+
+### CUSTOMER INSIGHTS:
+# ✓ DEMOGRAPHIC ANALYSIS: Customer profile trends, market segment performance
+# ✓ BEHAVIORAL PATTERNS: Engagement preferences, response timing, channel effectiveness
+# ✓ PROPERTY PREFERENCES: Popular features, price ranges, location trends
+# ✓ SATISFACTION TRACKING: Post-sale feedback, repeat customer analysis
+# ✓ LIFETIME VALUE: Customer value projection, upselling opportunities
+
+### BUSINESS INTELLIGENCE:
+# ✓ REVENUE FORECASTING: Pipeline-based revenue predictions, seasonal trends
+# ✓ MARKET ANALYSIS: Property demand, pricing trends, competitive landscape
+# ✓ CAMPAIGN ROI: Marketing channel effectiveness, cost per acquisition
+# ✓ TERRITORY ANALYSIS: Geographic performance, agent territory optimization
+# ✓ PREDICTIVE ANALYTICS: Lead scoring, churn prediction, optimal timing
+
+### DASHBOARD VIEWS:
+# ✓ AGENT DASHBOARD: Personal pipeline, follow-up tasks, performance metrics
+# ✓ MANAGER DASHBOARD: Team performance, pipeline overview, goal tracking
+# ✓ EXECUTIVE DASHBOARD: Revenue forecasts, market trends, strategic insights
+# ✓ MARKETING DASHBOARD: Campaign performance, lead generation, ROI analysis
+# ✓ CUSTOMER DASHBOARD: Property matches, viewing history, communication preferences

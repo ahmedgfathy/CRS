@@ -1,0 +1,20 @@
+{
+  "name": "supabase-real-estate-crm-setup",
+  "version": "1.0.0",
+  "description": "Supabase Real Estate CRM Database Setup",
+  "main": "setup.js",
+  "scripts": {
+    "setup": "node setup.js",
+    "test-connection": "node test-connection.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.10.9"
+  },
+  "keywords": ["supabase", "real-estate", "crm", "postgresql"],
+  "author": "Real Estate CRM Team",
+  "license": "MIT"
+}

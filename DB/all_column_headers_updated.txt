@@ -1,0 +1,313 @@
+1. 0LX ADS
+2. 4 UBDATE
+4. A mount
+6. Agent
+7. Apt No
+8. Area
+9. Bathroom
+10. Bedroom
+11. Building
+12. BY ME
+13. Sales Notes
+14. Call Action
+15. CATEGORY
+16. catogry
+17. Club - Maintenance
+18. Commission
+19. COMPOUND
+20. Created Time
+21. created_at
+22. currency
+23. date
+24. Date
+25. deleted_at
+26. Delivery date
+27. Deposit
+28. Description
+29. description
+30. Details Units
+31. Development Name
+32. Down Payment
+33. EGAR CONTACT NO
+34. Facilities Compound
+35. file_path
+36. file_source
+37. Finished
+38. Floor No.
+39. Garage
+40. Garden
+41. Garden Area
+42. GjsuO3ufQzsNlNKYjfT
+43. Handler
+44. id
+45. Installment
+46. is_featured
+47. Land area
+48. Land-Garden
+49. LAST CALL
+50. Last Follow in
+51. Last Modified By
+52. line_number
+53. Links PDF Details and Photos
+54. Living
+55. Location
+56. Map Location
+57. message
+58. message_backup
+59. Mobile No
+60. Mobile No.
+61. Modified Time
+62. Name
+63. need ubdate
+64. NOTE
+65. olx / property ( ADS )
+66. Paid Every
+67. Parcel name
+68. Parcel No.
+69. Payment
+70. Payment Type
+71. Phase
+72. Phone
+73. PHOTO
+74. Price
+75. Primary Email
+76. Property
+77. Property Category
+78. Property Image
+79. Property Name
+80. Property Name - Compound Name
+81. Property Number
+82. Property Offered By
+83. Property Source
+84. Property Type
+85. property_id
+86. property_type
+87. region
+88. Regions
+89. Rent To
+90. Roof Area
+91. ROOMS
+92. Sales
+93. Sales Area
+94. Sales representatives
+95. sales rooms
+96. Security
+97. sender_name
+98. sender_phone
+99. sender_phone_2
+100. Sheet Mobile No
+101. sold date
+102. Sold Unit Price
+103. sort_order
+104. SPACE
+105. status
+106. STATUS
+107. Swimming Pool
+108. t4C3YP8C7F8A3g3eTd3zrLUJQpWJk0ugRCov
+109. Take Price
+110. Tel
+111. terraces
+112. The Floors
+113. thumbnail_path
+114. time
+115. title
+116. Total Price
+117. Transfer fees
+118. Type
+119. type
+120. Type Sheet
+121. unique_id
+122. UNIT FACILITIES
+123. Unit For
+124. Unit NO
+125. Unit Price
+126. Unit Type
+127. Update unit
+128. updated_at
+129. Year
+130. Zain House Sales Notes
+131. Call Updates
+132. Activity
+133. Unit Offered For
+134. Property Division
+135. Compound Location
+136. Plot Number
+137. Rented From
+138. Unit Features
+139. Lead Status
+140. Lead Score
+141. Lead Quality
+142. Lead Source
+143. Lead Source Detail
+144. Lead Priority
+145. Budget Range
+146. Timeline
+147. Decision Authority
+148. Qualification Date
+149. Qualifying Agent
+150. Disqualification Reason
+151. Customer Type
+152. Age Range
+153. Gender
+154. Marital Status
+155. Family Size
+156. Children Count
+157. Occupation
+158. Company Name
+159. Job Title
+160. Income Level
+161. Nationality
+162. Current Address
+163. Current Location Area
+164. Residence Type
+165. Property Purpose
+166. Preferred Property Type
+167. Preferred Areas
+168. Preferred Bedrooms
+169. Preferred Size Range
+170. Max Budget
+171. Min Budget
+172. Payment Method Preference
+173. Financing Pre-approval
+174. Bank Name
+175. Special Requirements
+176. Deal Breakers
+177. Opportunity Stage
+178. Deal Probability
+179. Expected Close Date
+180. Deal Value
+181. Commission Value
+182. Competitor Properties
+183. Competitor Agents
+184. Our Competitive Advantage
+185. Objections
+186. Proposal Status
+187. Proposal Sent Date
+188. Quote Number
+189. Contract Status
+190. Follow-up Frequency
+191. Preferred Contact Method
+192. Best Time to Contact
+193. Language Preference
+194. Do Not Contact Flag
+195. Email Marketing Status
+196. SMS Marketing Status
+197. Newsletter Subscription
+198. Campaign Source
+199. Campaign ID
+200. Referral Source
+201. Referral Bonus Paid
+202. Engagement Level
+203. Response Time
+204. Website Visits
+205. Pages Viewed
+206. Brochures Downloaded
+207. Virtual Tours Viewed
+208. Site Visits Count
+209. Properties Viewed
+210. Last Website Activity
+211. Social Media Activity
+212. WhatsApp Group Member
+213. Lead to Opportunity Date
+214. First Contact Date
+215. First Meeting Date
+216. First Property Showing
+217. Decision Timeline
+218. Touch Points Count
+219. Sales Cycle Days
+220. Conversion Probability
+221. Lost Reason
+222. Won Reason
+223. Customer Satisfaction
+224. Repeat Customer
+225. Lifetime Value
+226. Agent ID
+227. Agent Code
+228. Agent Full Name
+229. Agent Display Name
+230. Agent Arabic Name
+231. Agent English Name
+232. Agent Title
+233. Agent Level
+234. Agent Status
+235. Agent Type
+236. Department
+237. Team
+238. Direct Manager
+239. Branch Office
+240. Territory Assignment
+241. Agent Mobile Primary
+242. Agent Mobile Secondary
+243. Agent Office Phone
+244. Agent WhatsApp Number
+245. Agent Email Primary
+246. Agent Email Secondary
+247. Agent Social Media LinkedIn
+248. Agent Social Media Facebook
+249. Agent Social Media Instagram
+250. Agent Website
+251. Agent Business Card
+252. Agent Profile Photo
+253. Agent Logo
+254. Preferred Contact Method
+255. Available Hours From
+256. Available Hours To
+257. Weekend Availability
+258. Property Specialization
+259. Area Expertise
+260. Price Range Expertise
+261. Client Type Specialization
+262. Service Type
+263. Language Skills
+264. Certifications
+265. Years of Experience
+266. Real Estate License Number
+267. License Expiry Date
+268. Education Background
+269. Previous Experience
+270. Commission Rate
+271. Sales Target Monthly
+272. Sales Target Quarterly
+273. Sales Target Annual
+274. Current Month Sales
+275. Current Quarter Sales
+276. Current Year Sales
+277. Total Career Sales
+278. Active Listings Count
+279. Active Leads Count
+280. Conversion Rate
+281. Average Deal Size
+282. Customer Satisfaction Rating
+283. Performance Rating
+284. Last Performance Review
+285. Next Performance Review
+286. Employment Start Date
+287. Employment End Date
+288. Contract Type
+289. Salary Base
+290. Salary Currency
+291. Benefits Package
+292. Vacation Days Entitled
+293. Vacation Days Taken
+294. Sick Days Taken
+295. Training Budget
+296. Equipment Provided
+297. Car Allowance
+298. Phone Allowance
+299. Marketing Budget
+300. Emergency Contact Name
+301. Emergency Contact Phone
+302. Emergency Contact Relation
+303. Training Completed
+304. Training In Progress
+305. Training Planned
+306. Mentorship Program
+307. Mentor Assigned
+308. Mentees Assigned
+309. Skills Assessment Score
+310. Knowledge Test Score
+311. Product Knowledge Level
+312. Market Knowledge Level
+313. Technology Proficiency
+314. Career Development Plan
+315. Goal Setting
