@@ -675,6 +675,7 @@ export default function PropertiesScreen({ navigation }: any) {
         style={styles.propertyCard}
         onPress={() => {
           console.log('Property selected:', property.id);
+          navigation.navigate('PropertyDetail', { property });
         }}
       >
         <View style={styles.propertyImageContainer}>

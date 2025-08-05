@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './screens/HomeScreen';
 import PropertiesScreen from './screens/PropertiesScreen';
+import PropertyDetailScreen from './screens/PropertyDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -38,6 +39,13 @@ export default function App() {
           <Stack.Screen 
             name="Properties" 
             component={PropertiesScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen 
+            name="PropertyDetail" 
+            component={PropertyDetailScreen}
             options={{
               headerShown: false,
             }}
