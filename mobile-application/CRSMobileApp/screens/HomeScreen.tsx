@@ -63,7 +63,7 @@ export default function HomeScreen({ navigation }: any) {
   const [stats, setStats] = useState({
     totalProperties: 0,
     totalAreas: 0,
-    featuredProperties: 0,
+    totalAgents: 0,
   });
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +106,11 @@ export default function HomeScreen({ navigation }: any) {
         .from('areas')
         .select('*', { count: 'exact', head: true });
 
+      // Get total agents count from contacts table
+      const { count: agentsCount } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true });
+
       // Try to get units count if units table exists
       let unitsCount = 0;
       try {
@@ -140,7 +145,7 @@ export default function HomeScreen({ navigation }: any) {
       setStats({
         totalProperties: totalItems,
         totalAreas: areaCount || 0,
-        featuredProperties: totalWithImages,
+        totalAgents: agentsCount || 0,
       });
       
       console.log(`📊 Stats loaded: ${totalItems} total items (${propertyCount} properties${unitsCount > 0 ? ` + ${unitsCount} units` : ''}), ${totalWithImages} with images`);
@@ -190,32 +195,33 @@ export default function HomeScreen({ navigation }: any) {
         console.log('ℹ️ No units table found, continuing with properties only');
       }
 
-      // Then get properties with images (original logic)
+      // Get properties with appwrite_images directly from properties table
       const { data: propertiesWithImages, error: imagesError } = await supabase
-        .from('property_images')
+        .from('properties')
         .select(`
-          property_id,
-          image_url,
-          is_primary,
-          properties!inner(
-            *,
-            areas(area_name),
-            property_types(type_name)
-          )
+          *,
+          areas(area_name),
+          property_types(type_name)
         `)
-        .eq('is_primary', true)
+        .not('appwrite_images', 'is', null)
+        .not('main_image_url', 'is', null)
         .limit(8);
 
       let propertiesFormatted: any[] = [];
       if (!imagesError && propertiesWithImages) {
-        propertiesFormatted = propertiesWithImages.map(item => ({
-          ...item.properties,
-          coverImage: {
-            url: item.image_url,
-            fileId: item.property_id
-          },
-          type: 'property' // Mark as property for distinction
-        }));
+        propertiesFormatted = await Promise.all(
+          propertiesWithImages.map(async (property) => {
+            // Get the cover image from appwrite_images column
+            const coverImage = await appwriteStorage.getPropertyCoverImage(property.id);
+            return {
+              ...property,
+              coverImage,
+              type: 'property' // Mark as property for distinction
+            };
+          })
+        );
+        // Filter out properties without valid cover images
+        propertiesFormatted = propertiesFormatted.filter(p => p.coverImage?.url);
       }
 
       // Combine units and properties, prioritize units if available
@@ -298,17 +304,44 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const openSideMenu = () => {
-    Alert.alert(
-      'Menu',
-      'Choose an option',
-      [
-        { text: 'Login', onPress: () => Alert.alert('Login', 'Login feature coming soon!') },
-        { text: 'Register as Agent', onPress: () => Alert.alert('Register', 'Registration feature coming soon!') },
-        { text: 'Settings', onPress: () => Alert.alert('Settings', 'Settings coming soon!') },
-        { text: 'About', onPress: () => Alert.alert('About', 'Contaboo Real Estate CRM') },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    setIsSidebarVisible(true);
+    Animated.timing(sidebarAnimation, {
+      toValue: 0,
+      duration: 300,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeSideMenu = () => {
+    Animated.timing(sidebarAnimation, {
+      toValue: -300,
+      duration: 250,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSidebarVisible(false);
+    });
+  };
+
+  const handleLogin = () => {
+    closeSideMenu();
+    setTimeout(() => {
+      Alert.alert('Login', 'Login feature coming soon!', [
+        { text: 'OK', style: 'default' }
+      ]);
+    }, 300);
+  };
+
+  const handleHelp = () => {
+    closeSideMenu();
+    setTimeout(() => {
+      Alert.alert(
+        'Help & Support', 
+        'Need assistance? Contact our support team:\n\n📧 Email: support@contaboo.com\n📞 Phone: +20 123 456 7890\n🌐 Website: www.contaboo.com',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }, 300);
   };
 
   // Auto-scroll slideshow
@@ -383,8 +416,70 @@ export default function HomeScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+    <>
+      {/* Modern Sidebar Modal */}
+      <Modal
+        visible={isSidebarVisible}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeSideMenu}
+      >
+        <View style={styles.sidebarOverlay}>
+          <TouchableOpacity 
+            style={styles.sidebarBackground} 
+            activeOpacity={1}
+            onPress={closeSideMenu}
+          />
+          <Animated.View 
+            style={[
+              styles.sidebarContainer,
+              { transform: [{ translateX: sidebarAnimation }] }
+            ]}
+          >
+            {/* Sidebar Header */}
+            <View style={styles.sidebarHeader}>
+              <ContabooLogo color="#1F2937" size="medium" />
+              <TouchableOpacity onPress={closeSideMenu} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Sidebar Content */}
+            <View style={styles.sidebarContent}>
+              {/* Login Button */}
+              <TouchableOpacity style={styles.sidebarItem} onPress={handleLogin}>
+                <View style={styles.sidebarItemIcon}>
+                  <Ionicons name="log-in-outline" size={24} color="#2563EB" />
+                </View>
+                <Text style={styles.sidebarItemText}>Login</Text>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              {/* Help Button */}
+              <TouchableOpacity style={styles.sidebarItem} onPress={handleHelp}>
+                <View style={styles.sidebarItemIcon}>
+                  <Ionicons name="help-circle-outline" size={24} color="#10B981" />
+                </View>
+                <Text style={styles.sidebarItemText}>Help & Support</Text>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Sidebar Footer */}
+            <View style={styles.sidebarFooter}>
+              <View style={styles.copyrightContainer}>
+                <Text style={styles.copyrightText}>© 2025 Contaboo</Text>
+                <Text style={styles.copyrightSubtext}>Ahmed Fathy</Text>
+              </View>
+              <View style={styles.footerDivider} />
+              <Text style={styles.footerNote}>Real Estate Management System</Text>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
       
       {/* Header */}
       <View style={styles.header}>
@@ -450,6 +545,36 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* Live Statistics */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Live Statistics</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <FontAwesome5 name="home" size={24} color="#2563EB" />
+              </View>
+              <Text style={styles.statNumber}>{stats.totalProperties.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>Properties</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="location" size={24} color="#059669" />
+              </View>
+              <Text style={styles.statNumber}>{stats.totalAreas}</Text>
+              <Text style={styles.statLabel}>Areas</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="people" size={24} color="#DC2626" />
+              </View>
+              <Text style={styles.statNumber}>{stats.totalAgents}</Text>
+              <Text style={styles.statLabel}>Agents</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -500,36 +625,6 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Live Statistics */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Live Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <FontAwesome5 name="home" size={24} color="#2563EB" />
-              </View>
-              <Text style={styles.statNumber}>{stats.totalProperties.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Total Properties</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="location" size={24} color="#059669" />
-              </View>
-              <Text style={styles.statNumber}>{stats.totalAreas}</Text>
-              <Text style={styles.statLabel}>Areas Covered</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="star" size={24} color="#D97706" />
-              </View>
-              <Text style={styles.statNumber}>{stats.featuredProperties}</Text>
-              <Text style={styles.statLabel}>With Images</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Featured Properties */}
         {featuredProperties.length > 0 && (
           <View style={styles.featuredSection}>
@@ -551,35 +646,9 @@ export default function HomeScreen({ navigation }: any) {
             </ScrollView>
           </View>
         )}
-
-        {/* Add Featured Units Section */}
-        <View style={styles.featuredSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Units</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {featuredProperties.filter(item => item.type === 'unit').length > 0 ? (
-            <FlatList
-              data={featuredProperties.filter(item => item.type === 'unit')}
-              renderItem={({ item }) => <PropertyCard property={item} />}
-              keyExtractor={(item, index) => `unit-${item.id || index}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.propertiesContainer}
-            />
-          ) : (
-            <View style={styles.noUnitsContainer}>
-              <Ionicons name="business" size={48} color="#9CA3AF" />
-              <Text style={styles.noUnitsText}>No units with images available</Text>
-              <Text style={styles.noUnitsSubtext}>Units will appear here when they have photos</Text>
-            </View>
-          )}
-        </View>
       </ScrollView>
     </SafeAreaView>
+    </>
   );
 }
 
@@ -693,7 +762,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1E293B',
     marginBottom: 16,
@@ -745,13 +814,13 @@ const styles = StyleSheet.create({
     }),
   },
   actionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1E293B',
     marginBottom: 2,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#64748B',
     textAlign: 'center',
   },
@@ -803,7 +872,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
     textAlign: 'center',
   },
@@ -950,5 +1019,114 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 4,
     textAlign: 'center',
+  },
+
+  // Modern Sidebar Styles
+  sidebarOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flexDirection: 'row',
+  },
+  sidebarBackground: {
+    flex: 1,
+  },
+  sidebarContainer: {
+    width: 280,
+    backgroundColor: '#FFFFFF',
+    height: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 20,
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarContent: {
+    flex: 1,
+    paddingTop: 20,
+  },
+  sidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 12,
+    marginVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  sidebarItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sidebarItemText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  sidebarFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#F8FAFC',
+  },
+  copyrightContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  copyrightText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  copyrightSubtext: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  footerDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  footerNote: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

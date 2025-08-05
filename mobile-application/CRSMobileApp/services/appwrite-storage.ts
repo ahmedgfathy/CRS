@@ -81,39 +81,41 @@ class AppwriteStorageService {
 
   /**
    * Get property images from Supabase with Appwrite URLs
+   * Now reads from appwrite_images column in properties table
    */
   async getPropertyImages(propertyId: number) {
     try {
       const { supabase } = await import('./supabase');
       
-      const { data, error } = await supabase
-        .from('property_images')
-        .select('*')
-        .eq('property_id', propertyId)
-        .order('id');
+      // First try to get from the new appwrite_images column
+      const { data: propertyData, error: propertyError } = await supabase
+        .from('properties')
+        .select('appwrite_images, main_image_url')
+        .eq('id', propertyId)
+        .single();
 
-      if (error) {
-        console.error('Error fetching property images from Supabase:', error);
+      if (propertyError) {
+        console.error('Error fetching property from Supabase:', propertyError);
         return [];
       }
 
-      if (!data || data.length === 0) {
+      if (!propertyData?.appwrite_images || !Array.isArray(propertyData.appwrite_images)) {
+        console.log(`No appwrite_images found for property ${propertyId}`);
         return [];
       }
 
-      return data.map((img) => ({
-        id: img.id,
-        appwrite_file_id: img.appwrite_file_id,
-        title: img.image_title || 'Property Image',
-        url: img.appwrite_file_id 
-          ? this.getFilePreview(img.appwrite_file_id, 400, 300)
-          : img.image_url || '',
-        thumbnail: img.appwrite_file_id 
-          ? this.getFilePreview(img.appwrite_file_id, 150, 150)
-          : img.image_url || '',
-        urls: this.getResponsiveImageUrls(img.appwrite_file_id),
-        isPrimary: img.is_primary || false,
-        sortOrder: img.sort_order || 0,
+      // Transform appwrite_images data to the expected format
+      return propertyData.appwrite_images.map((img: any, index: number) => ({
+        id: img.id || `img_${index}`,
+        appwrite_file_id: img.id,
+        title: img.name || `Property Image ${index + 1}`,
+        url: img.fileUrl || '',
+        thumbnail: img.id 
+          ? this.getFilePreview(img.id, 150, 150)
+          : img.fileUrl || '',
+        urls: this.getResponsiveImageUrls(img.id),
+        isPrimary: index === 0, // First image is primary
+        sortOrder: index,
       }));
     } catch (error) {
       console.error('Error in getPropertyImages:', error);
