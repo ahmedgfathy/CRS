@@ -13,6 +13,8 @@ import {
   Dimensions,
   Platform,
   ScrollView,
+  StatusBar,
+  Modal,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
@@ -43,9 +45,21 @@ export default function PropertiesScreen({ navigation }: any) {
   const [hasMoreData, setHasMoreData] = useState(true);
   const ITEMS_PER_PAGE = 20;
 
+  // Add state for showing filter modal
+  const [showFilters, setShowFilters] = useState(false);
+  const [areaSearchText, setAreaSearchText] = useState('');
+  const [typeSearchText, setTypeSearchText] = useState('');
+
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Reload data when filters change
+  useEffect(() => {
+    if (areas.length > 0) { // Only reload if areas are loaded (not on initial mount)
+      loadInitialData(1, false);
+    }
+  }, [selectedArea, selectedType, selectedCategory, searchText]);
 
   const loadInitialData = async (page = 1, append = false) => {
     try {
@@ -60,25 +74,55 @@ export default function PropertiesScreen({ navigation }: any) {
       const offset = (page - 1) * ITEMS_PER_PAGE;
       let allItems: any[] = [];
 
-      // Load properties with pagination
-      const { data: propertiesData, error: propertiesError } = await supabase
+      // Build query with filters applied
+      let propertyQuery = supabase
         .from('properties')
         .select(`
           id,
           title,
           price,
-          currency,
           area_id,
-          property_type_id,
-          category,
+          type_id,
+          category_id,
           created_at,
           areas(area_name),
           property_types(type_name)
-        `)
+        `);
+
+      // Apply filters to the main query
+      if (selectedArea) {
+        propertyQuery = propertyQuery.eq('area_id', selectedArea);
+      }
+      
+      if (selectedType) {
+        propertyQuery = propertyQuery.eq('type_id', selectedType);
+      }
+
+      if (selectedCategory !== 'all') {
+        // Map category names to IDs for filtering
+        const categoryMap: { [key: string]: number } = {
+          'residential': 5,
+          'commercial': 6,
+          'industrial': 7,
+          'mixed': 8
+        };
+        if (categoryMap[selectedCategory]) {
+          propertyQuery = propertyQuery.eq('category_id', categoryMap[selectedCategory]);
+        }
+      }
+
+      if (searchText.trim()) {
+        propertyQuery = propertyQuery.ilike('title', `%${searchText.trim()}%`);
+      }
+
+      const { data: propertiesData, error: propertiesError } = await propertyQuery
         .range(offset, offset + ITEMS_PER_PAGE - 1)
         .order('created_at', { ascending: false });
 
       if (!propertiesError && propertiesData) {
+        console.log(`✅ Loaded ${propertiesData.length} properties on page ${page}`);
+        console.log('📋 Sample property data:', propertiesData[0] || 'No properties found');
+        
         // Get images for properties in batches for better performance
         const propertiesWithImages = await Promise.all(
           propertiesData.slice(0, 10).map(async (property) => { // Only get images for first 10
@@ -87,7 +131,10 @@ export default function PropertiesScreen({ navigation }: any) {
               ...property,
               coverImage,
               type: 'property',
-              category: property.category || 'residential'
+              category: property.category_id === 5 ? 'residential' : 
+                       property.category_id === 6 ? 'commercial' :
+                       property.category_id === 7 ? 'industrial' :
+                       property.category_id === 8 ? 'mixed' : 'residential'
             };
           })
         );
@@ -97,10 +144,16 @@ export default function PropertiesScreen({ navigation }: any) {
           ...property,
           coverImage: null,
           type: 'property',
-          category: property.category || 'residential'
+          category: property.category_id === 5 ? 'residential' : 
+                   property.category_id === 6 ? 'commercial' :
+                   property.category_id === 7 ? 'industrial' :
+                   property.category_id === 8 ? 'mixed' : 'residential'
         }));
         
         allItems = [...propertiesWithImages, ...remainingProperties];
+      } else {
+        console.error('❌ Properties Error:', propertiesError);
+        console.log('📊 Properties Data:', propertiesData);
       }
 
       // Check if we have more data
@@ -118,18 +171,17 @@ export default function PropertiesScreen({ navigation }: any) {
           .from('areas')
           .select('id, area_name')
           .eq('status', 'active')
-          .order('area_name')
-          .limit(10); // Limit areas for better UX
+          .order('area_name'); // Remove limit to get ALL areas
         
+        console.log(`📍 Loaded ${areasData?.length || 0} areas:`, areasData?.slice(0, 5).map(a => a.area_name) || []);
         setAreas(areasData || []);
         
         const { data: typesData } = await supabase
           .from('property_types')
           .select('id, type_name')
-          .eq('is_active', true)
-          .order('type_name')
-          .limit(10); // Limit types for better UX
+          .order('type_name'); // Remove limit to get ALL types
         
+        console.log(`🏢 Loaded ${typesData?.length || 0} property types:`, typesData?.slice(0, 5).map(t => t.type_name) || []);
         setPropertyTypes(typesData || []);
       }
       
@@ -178,11 +230,11 @@ export default function PropertiesScreen({ navigation }: any) {
       }
       
       if (selectedType) {
-        propertyQuery = propertyQuery.eq('property_type_id', selectedType);
+        propertyQuery = propertyQuery.eq('type_id', selectedType);
       }
 
       if (selectedCategory !== 'all') {
-        propertyQuery = propertyQuery.eq('category', selectedCategory);
+        propertyQuery = propertyQuery.eq('category_id', selectedCategory);
       }
       
       if (searchText.trim()) {
@@ -201,7 +253,7 @@ export default function PropertiesScreen({ navigation }: any) {
               ...property,
               coverImage,
               type: 'property',
-              category: property.category || 'residential'
+              category: property.category_id || 'residential'
             };
           })
         );
@@ -228,11 +280,11 @@ export default function PropertiesScreen({ navigation }: any) {
         }
         
         if (selectedType) {
-          unitQuery = unitQuery.eq('property_type_id', selectedType);
+          unitQuery = unitQuery.eq('type_id', selectedType);
         }
 
         if (selectedCategory !== 'all') {
-          unitQuery = unitQuery.eq('category', selectedCategory);
+          unitQuery = unitQuery.eq('category_id', selectedCategory);
         }
         
         if (searchText.trim()) {
@@ -277,14 +329,19 @@ export default function PropertiesScreen({ navigation }: any) {
     setSelectedArea(null);
     setSelectedType(null);
     setSelectedCategory('all');
-    loadInitialData(1, false);
   };
 
-  // Filter properties based on selected category
-  const filteredProperties = properties.filter(item => {
-    if (selectedCategory === 'all') return true;
-    return item.category === selectedCategory;
-  });
+  const openFiltersModal = () => {
+    setAreaSearchText('');
+    setTypeSearchText('');
+    setShowFilters(true);
+  };
+
+  const closeFiltersModal = () => {
+    setAreaSearchText('');
+    setTypeSearchText('');
+    setShowFilters(false);
+  };
 
   // Optimized Property card component
   const PropertyCard = React.memo(({ property }: { property: any }) => (
@@ -321,7 +378,7 @@ export default function PropertiesScreen({ navigation }: any) {
         {property.price && (
           <View style={styles.priceTag}>
             <Text style={styles.priceText}>
-              {property.currency || 'EGP'} {property.price.toLocaleString()}
+              EGP {property.price.toLocaleString()}
             </Text>
           </View>
         )}
@@ -358,7 +415,6 @@ export default function PropertiesScreen({ navigation }: any) {
   // Render header components as FlatList header
   const renderHeader = () => (
     <View>
-      {/* Header with search */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#9CA3AF" />
@@ -367,7 +423,7 @@ export default function PropertiesScreen({ navigation }: any) {
             placeholder="Search properties and units..."
             value={searchText}
             onChangeText={setSearchText}
-            onSubmitEditing={searchProperties}
+            returnKeyType="search"
           />
           {searchText.length > 0 && (
             <TouchableOpacity onPress={() => setSearchText('')}>
@@ -376,97 +432,69 @@ export default function PropertiesScreen({ navigation }: any) {
           )}
         </View>
         
-        <TouchableOpacity style={styles.searchButton} onPress={searchProperties}>
-          <Ionicons name="search" size={18} color="white" />
+        <TouchableOpacity 
+          style={styles.filterButton} 
+          onPress={openFiltersModal}
+        >
+          <Ionicons name="filter" size={18} color="white" />
+          {(selectedArea || selectedType || selectedCategory !== 'all') && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>
+                {[selectedArea, selectedType, selectedCategory !== 'all' ? '1' : null].filter(Boolean).length}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Category Filter - Compact */}
-      <View style={styles.categorySection}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.categoryScroll}>
-            {PROPERTY_CATEGORIES.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  selectedCategory === category.id && styles.categoryCardActive
-                ]}
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                <MaterialIcons 
-                  name={category.icon as any} 
-                  size={16} 
-                  color={selectedCategory === category.id ? 'white' : '#2563EB'} 
-                />
-                <Text style={[
-                  styles.categoryText,
-                  selectedCategory === category.id && styles.categoryTextActive
-                ]}>
-                  {category.name}
-                </Text>
+      {/* Active Filters Display */}
+      {(selectedArea || selectedType || selectedCategory !== 'all') && (
+        <View style={styles.activeFiltersSection}>
+          <Text style={styles.activeFiltersTitle}>Active Filters:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.activeFiltersRow}>
+              {selectedCategory !== 'all' && (
+                <View style={styles.activeFilterChip}>
+                  <Text style={styles.activeFilterText}>
+                    {PROPERTY_CATEGORIES.find(c => c.id === selectedCategory)?.name}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedCategory('all')}>
+                    <Ionicons name="close" size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {selectedType && (
+                <View style={styles.activeFilterChip}>
+                  <Text style={styles.activeFilterText}>
+                    {propertyTypes.find(t => t.id === selectedType)?.type_name}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedType(null)}>
+                    <Ionicons name="close" size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {selectedArea && (
+                <View style={styles.activeFilterChip}>
+                  <Text style={styles.activeFilterText}>
+                    {areas.find(a => a.id === selectedArea)?.area_name}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedArea(null)}>
+                    <Ionicons name="close" size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              <TouchableOpacity style={styles.clearAllButton} onPress={clearFilters}>
+                <Text style={styles.clearAllText}>Clear All</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
-      {/* Area and Type Filters */}
-      <View style={styles.filtersSection}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.filterRow}>
-            {/* Area filters */}
-            {areas.slice(0, 4).map((area) => (
-              <TouchableOpacity
-                key={`area-${area.id}`}
-                style={[
-                  styles.filterPill,
-                  selectedArea === area.id && styles.filterPillActive
-                ]}
-                onPress={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
-              >
-                <Text style={[
-                  styles.filterPillText,
-                  selectedArea === area.id && styles.filterPillTextActive
-                ]}>
-                  📍 {area.area_name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            
-            {/* Type filters */}
-            {propertyTypes.slice(0, 4).map((type) => (
-              <TouchableOpacity
-                key={`type-${type.id}`}
-                style={[
-                  styles.filterPill,
-                  selectedType === type.id && styles.filterPillActive
-                ]}
-                onPress={() => setSelectedType(selectedType === type.id ? null : type.id)}
-              >
-                <Text style={[
-                  styles.filterPillText,
-                  selectedType === type.id && styles.filterPillTextActive
-                ]}>
-                  🏠 {type.type_name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            
-            {/* Clear filters button */}
-            {(selectedArea || selectedType || selectedCategory !== 'all' || searchText) && (
-              <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-                <Text style={styles.clearButtonText}>Clear All</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Section Header */}
+      {/* Results Header */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>
-          {filteredProperties.length} Properties Found
+          {properties.length} Properties Found
         </Text>
         <Text style={styles.resultsSubtext}>
           {selectedCategory !== 'all' && `${PROPERTY_CATEGORIES.find(c => c.id === selectedCategory)?.name} • `}
@@ -478,8 +506,24 @@ export default function PropertiesScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+      
+      {/* Blue Header */}
+      <View style={styles.blueHeader}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Browse Properties</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+      </View>
+      
       <FlatList
-        data={filteredProperties}
+        data={properties}
         keyExtractor={(item) => `${item.type}-${item.id}`}
         renderItem={({ item }) => <PropertyCard property={item} />}
         numColumns={2}
@@ -522,6 +566,166 @@ export default function PropertiesScreen({ navigation }: any) {
           ) : null
         }
       />
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilters}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeFiltersModal}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeFiltersModal}>
+              <Ionicons name="close" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Filter Properties</Text>
+            <TouchableOpacity onPress={clearFilters}>
+              <Text style={styles.clearAllText}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Category Filter */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Category</Text>
+              <View style={styles.optionsGrid}>
+                {PROPERTY_CATEGORIES.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.optionItem,
+                      selectedCategory === category.id && styles.optionItemActive
+                    ]}
+                    onPress={() => setSelectedCategory(category.id)}
+                  >
+                    <MaterialIcons 
+                      name={category.icon as any} 
+                      size={20} 
+                      color={selectedCategory === category.id ? 'white' : '#2563EB'} 
+                    />
+                    <Text style={[
+                      styles.optionText,
+                      selectedCategory === category.id && styles.optionTextActive
+                    ]}>
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Property Types */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Property Type</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search property types..."
+                value={typeSearchText}
+                onChangeText={setTypeSearchText}
+              />
+              <View style={styles.optionsGrid}>
+                {propertyTypes
+                  .filter(type => 
+                    type.type_name.toLowerCase().includes(typeSearchText.toLowerCase())
+                  )
+                  .slice(0, 20) // Limit to first 20 matches
+                  .map((type) => (
+                  <TouchableOpacity
+                    key={`type-${type.id}`}
+                    style={[
+                      styles.optionItem,
+                      selectedType === type.id && styles.optionItemActive
+                    ]}
+                    onPress={() => setSelectedType(selectedType === type.id ? null : type.id)}
+                  >
+                    <Text style={[
+                      styles.optionText,
+                      selectedType === type.id && styles.optionTextActive
+                    ]}>
+                      {type.type_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {typeSearchText && propertyTypes.filter(type => 
+                type.type_name.toLowerCase().includes(typeSearchText.toLowerCase())
+              ).length > 20 && (
+                <Text style={styles.moreResultsText}>
+                  +{propertyTypes.filter(type => 
+                    type.type_name.toLowerCase().includes(typeSearchText.toLowerCase())
+                  ).length - 20} more results...
+                </Text>
+              )}
+            </View>
+
+            {/* Areas */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Areas ({areas.length} available)</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Type area name (e.g. 'new', 'cairo')..."
+                value={areaSearchText}
+                onChangeText={setAreaSearchText}
+              />
+              <View style={styles.optionsGrid}>
+                {areas
+                  .filter(area => 
+                    areaSearchText.length >= 2 ? 
+                    area.area_name.toLowerCase().includes(areaSearchText.toLowerCase()) :
+                    areaSearchText.length === 0
+                  )
+                  .slice(0, 15) // Show max 15 areas at once
+                  .map((area) => (
+                  <TouchableOpacity
+                    key={`area-${area.id}`}
+                    style={[
+                      styles.optionItem,
+                      selectedArea === area.id && styles.optionItemActive
+                    ]}
+                    onPress={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
+                  >
+                    <Text style={[
+                      styles.optionText,
+                      selectedArea === area.id && styles.optionTextActive
+                    ]}>
+                      {area.area_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {areaSearchText.length >= 2 && areas.filter(area => 
+                area.area_name.toLowerCase().includes(areaSearchText.toLowerCase())
+              ).length > 15 && (
+                <Text style={styles.moreResultsText}>
+                  +{areas.filter(area => 
+                    area.area_name.toLowerCase().includes(areaSearchText.toLowerCase())
+                  ).length - 15} more areas found. Keep typing to narrow down...
+                </Text>
+              )}
+              {areaSearchText.length === 1 && (
+                <Text style={styles.hintText}>
+                  💡 Type at least 2 characters to search areas
+                </Text>
+              )}
+              {areaSearchText.length === 0 && (
+                <Text style={styles.hintText}>
+                  🔍 Start typing to search through {areas.length} areas
+                </Text>
+              )}
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity 
+              style={styles.applyButton} 
+              onPress={closeFiltersModal}
+            >
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -529,7 +733,45 @@ export default function PropertiesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+  },
+  
+  // Blue Header (matching HomeScreen)
+  blueHeader: {
+    backgroundColor: '#2563EB',
+    paddingBottom: 15,
+    paddingTop: Platform.OS === 'android' ? 5 : 5,
+    ...Platform.select({
+      android: {
+        elevation: 8,
+      },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+    }),
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 5,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+  },
+  headerPlaceholder: {
+    width: 40, // Same width as back button to center the title
   },
   scrollView: {
     flex: 1,
@@ -538,19 +780,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    ...Platform.select({
-      android: {
-        elevation: 2,
-      },
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-    }),
   },
   searchBar: {
     flex: 1,
@@ -585,7 +816,7 @@ const styles = StyleSheet.create({
   // Category Section
   categorySection: {
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8FAFC',
   },
   categoryScroll: {
     flexDirection: 'row',
@@ -627,10 +858,29 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   
-  // Filters Section
+  // Filter Sections
+  filterSection: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 8,
+  },
+  filterScroll: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  
+  // Filters Section (legacy - keeping for compatibility)
   filtersSection: {
     paddingVertical: 12,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
@@ -640,21 +890,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterPill: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   filterPillActive: {
     backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
   },
   filterPillText: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '500',
   },
   filterPillTextActive: {
     color: 'white',
+    fontWeight: '600',
   },
   clearButton: {
     backgroundColor: '#EF4444',
@@ -866,5 +1123,176 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
+  },
+
+  // New Filter System Styles
+  filterButton: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  
+  // Active Filters
+  activeFiltersSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  activeFiltersTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeFilterChip: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  activeFilterText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  clearAllButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  clearAllText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  modalSection: {
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionItem: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  optionItemActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  optionText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  optionTextActive: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  applyButton: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Search within filters
+  moreResultsText: {
+    textAlign: 'center',
+    color: '#6B7280',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 12,
+    paddingHorizontal: 16,
+  },
+  hintText: {
+    textAlign: 'center',
+    color: '#9CA3AF',
+    fontSize: 14,
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
 });

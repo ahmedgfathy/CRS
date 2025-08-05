@@ -39,7 +39,7 @@ export default function App() {
             name="Properties" 
             component={PropertiesScreen}
             options={{
-              title: 'Browse Properties',
+              headerShown: false,
             }}
           />
         </Stack.Navigator>
