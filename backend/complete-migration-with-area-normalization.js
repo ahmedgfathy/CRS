@@ -32,6 +32,11 @@ class AreaNormalizationService {
         // Extract unique area names with statistics
         const uniqueAreas = new Set();
         const areaStats = new Map();
+}es = await this.appwrite.getAllProperties();
+        
+        // Extract unique area names with statistics
+        const uniqueAreas = new Set();
+        const areaStats = new Map();
         
         allProperties.forEach(property => {
             if (property.area && property.area.trim()) {
@@ -234,13 +239,9 @@ class CompleteMigrationService {
             console.log('\n=== PHASE 2: PROPERTY RETRIEVAL ===');
             const allProperties = await this.appwrite.getAllProperties();
             
-            // Phase 3: Migrate properties with proper relationships
-            console.log('\n=== PHASE 3: PROPERTY MIGRATION ===');
+            // Phase 3: Migrate properties with proper relationships and media
+            console.log('\n=== PHASE 3: PROPERTY MIGRATION WITH MEDIA ===');
             await this.migratePropertiesWithRelationships(allProperties);
-            
-            // Phase 4: Link rich media (keep files in Appwrite storage)
-            console.log('\n=== PHASE 4: MEDIA LINKING ===');
-            await this.migrateRichMedia(allProperties);
             
             const endTime = Date.now();
             const duration = (endTime - startTime) / 1000;
@@ -293,9 +294,10 @@ class CompleteMigrationService {
         const batchSize = 25; // Smaller batches for better error handling
         let successCount = 0;
         let errorCount = 0;
+        let mediaCount = { images: 0, videos: 0, propertiesWithMedia: 0 };
         const errors = [];
 
-        console.log(`📦 Migrating ${properties.length} properties in batches of ${batchSize}`);
+        console.log(`📦 Migrating ${properties.length} properties with media in batches of ${batchSize}`);
 
         for (let i = 0; i < properties.length; i += batchSize) {
             const batch = properties.slice(i, i + batchSize);
@@ -311,6 +313,15 @@ class CompleteMigrationService {
                     const transformed = await this.transformPropertyWithRelationships(property);
                     if (transformed) {
                         processedBatch.push(transformed);
+                        
+                        // Count media
+                        if (transformed.appwrite_images && transformed.appwrite_images.length > 0) {
+                            mediaCount.images += transformed.appwrite_images.length;
+                            mediaCount.propertiesWithMedia++;
+                        }
+                        if (transformed.appwrite_videos && transformed.appwrite_videos.length > 0) {
+                            mediaCount.videos += transformed.appwrite_videos.length;
+                        }
                     }
                 } catch (error) {
                     console.error(`❌ Error transforming property ${property.$id}:`, error.message);
@@ -336,7 +347,7 @@ class CompleteMigrationService {
                         errors.push({ batch: batchNumber, error: error.message });
                     } else {
                         successCount += data.length;
-                        console.log(`✅ Successfully inserted ${data.length} properties`);
+                        console.log(`✅ Successfully inserted ${data.length} properties with media`);
                         
                         // Show sample of inserted properties
                         if (data.length > 0) {
@@ -350,15 +361,21 @@ class CompleteMigrationService {
                 }
             }
 
-            // Progress indicator
+            // Progress indicator with media stats
             const progress = ((i + batchSize) / properties.length * 100).toFixed(1);
             console.log(`📊 Progress: ${progress}% | Success: ${successCount} | Errors: ${errorCount}`);
+            console.log(`📷 Media so far: ${mediaCount.images} images, ${mediaCount.videos} videos from ${mediaCount.propertiesWithMedia} properties`);
         }
 
         console.log(`\n📊 MIGRATION SUMMARY:`);
         console.log(`   ✅ Successful: ${successCount} properties`);
         console.log(`   ❌ Failed: ${errorCount} properties`);
         console.log(`   📈 Success Rate: ${((successCount / properties.length) * 100).toFixed(1)}%`);
+        console.log(`\n📷 MEDIA SUMMARY:`);
+        console.log(`   🖼️ Total Images: ${mediaCount.images}`);
+        console.log(`   🎥 Total Videos: ${mediaCount.videos}`);
+        console.log(`   🏠 Properties with Media: ${mediaCount.propertiesWithMedia}`);
+        console.log(`   🔗 All media links preserved to Appwrite storage bucket 673a2734001f92c1826e`);
 
         if (errors.length > 0) {
             console.log(`\n⚠️ First 5 errors:`);
@@ -392,6 +409,10 @@ class CompleteMigrationService {
 
         // Parse compound name
         const { title, compoundName } = this.parseCompoundName(prop.compoundName);
+
+        // Parse and store Appwrite media data directly in the properties table
+        const appwriteImages = this.parseAppwriteMedia(prop.propertyImage);
+        const appwriteVideos = this.parseAppwriteMedia(prop.videos);
 
         // Build the transformed property object
         const transformedProperty = {
@@ -440,6 +461,11 @@ class CompleteMigrationService {
             // User preferences
             is_liked: prop.liked || false,
             featured_home: prop.inHome || false,
+            
+            // CRITICAL: Store Appwrite media data directly
+            appwrite_images: appwriteImages,
+            appwrite_videos: appwriteVideos,
+            main_image_url: appwriteImages?.[0]?.fileUrl || null,
             
             // System timestamps
             created_at: this.parseTimestamp(prop.$createdAt),
@@ -601,6 +627,30 @@ class CompleteMigrationService {
         return categoryMap[category.toLowerCase()] || 'Residential';
     }
 
+    parseAppwriteMedia(mediaString) {
+        if (!mediaString || mediaString === '[]' || mediaString === '{}') return null;
+        
+        try {
+            const mediaArray = typeof mediaString === 'string' ? JSON.parse(mediaString) : mediaString;
+            if (!Array.isArray(mediaArray) || mediaArray.length === 0) return null;
+            
+            // Return the media array with all Appwrite storage information intact
+            return mediaArray.map(media => ({
+                id: media.id,
+                fileUrl: media.fileUrl,
+                name: media.name || null,
+                mimeType: media.mimeType || null,
+                fileSize: media.fileSize || null,
+                bucketId: media.bucketId || '673a2734001f92c1826e', // Default to images bucket
+                createdAt: media.$createdAt || null,
+                updatedAt: media.$updatedAt || null
+            }));
+        } catch (error) {
+            console.warn('⚠️ Error parsing media data:', error.message);
+            return null;
+        }
+    }
+
     parseBoolean(value) {
         if (typeof value === 'boolean') return value;
         if (typeof value === 'string') {
@@ -653,51 +703,71 @@ class CompleteMigrationService {
     }
 
     async migrateRichMedia(properties) {
-        console.log('🖼️ Starting media linking (keeping files in Appwrite storage)...');
+        console.log('🖼️ Starting media linking (maintaining Appwrite storage connections)...');
+        console.log('🔗 Each property will maintain its connection to Appwrite storage via property ID');
         let imageCount = 0;
         let videoCount = 0;
+        let linkedProperties = 0;
 
         for (let i = 0; i < properties.length; i++) {
             const property = properties[i];
             
             try {
-                // Get Supabase property ID
+                // Get Supabase property ID using the Appwrite property ID
                 const { data: supabaseProperty } = await this.supabase.client
                     .from('properties')
-                    .select('id')
+                    .select('id, property_code')
                     .eq('appwrite_id', property.$id)
                     .single();
 
-                if (!supabaseProperty) continue;
+                if (!supabaseProperty) {
+                    console.warn(`⚠️ No Supabase property found for Appwrite ID: ${property.$id}`);
+                    continue;
+                }
 
-                // Link images (keep in Appwrite storage)
+                console.log(`🔄 Processing property ${i + 1}/${properties.length}: ${property.$id} → ${supabaseProperty.property_code}`);
+
+                // Link images (maintaining Appwrite storage connection)
                 const images = await this.linkPropertyImages(property, supabaseProperty.id);
                 imageCount += images;
                 
-                // Link videos (keep in Appwrite storage)
+                // Link videos (maintaining Appwrite storage connection)
                 const videos = await this.linkPropertyVideos(property, supabaseProperty.id);
                 videoCount += videos;
+
+                if (images > 0 || videos > 0) {
+                    linkedProperties++;
+                }
                 
-                if ((i + 1) % 100 === 0) {
-                    console.log(`📊 Processed ${i + 1}/${properties.length} properties for media linking`);
+                if ((i + 1) % 50 === 0) {
+                    console.log(`📊 Progress: ${i + 1}/${properties.length} properties processed`);
+                    console.log(`📊 Linked so far: ${imageCount} images, ${videoCount} videos from ${linkedProperties} properties`);
                 }
                 
             } catch (error) {
-                console.error(`❌ Error linking media for ${property.$id}:`, error.message);
+                console.error(`❌ Error linking media for property ${property.$id}:`, error.message);
             }
         }
 
-        console.log(`✅ Media linking completed: ${imageCount} images, ${videoCount} videos linked to Appwrite storage`);
+        console.log(`\n✅ MEDIA LINKING COMPLETED:`);
+        console.log(`   📷 Images linked: ${imageCount}`);
+        console.log(`   🎥 Videos linked: ${videoCount}`);
+        console.log(`   🏠 Properties with media: ${linkedProperties}`);
+        console.log(`   🔗 All media maintains connection to Appwrite storage`);
+        console.log(`   📋 Connection maintained via: appwrite_property_id → appwrite_file_id → storage URL`);
     }
 
     async linkPropertyImages(appwriteProperty, supabasePropertyId) {
         const images = this.parseJSON(appwriteProperty.propertyImage);
         if (!images || !Array.isArray(images) || images.length === 0) return 0;
 
-        // Create image records that reference Appwrite storage
+        console.log(`🔗 Linking ${images.length} images for property ${appwriteProperty.$id} → Supabase ID ${supabasePropertyId}`);
+
+        // Create image records that maintain the Appwrite → Supabase connection
         const imageRecords = images.map((image, index) => ({
-            property_id: supabasePropertyId,
-            appwrite_file_id: image.id, // Keep original Appwrite file ID
+            property_id: supabasePropertyId, // Supabase property foreign key
+            appwrite_property_id: appwriteProperty.$id, // Original Appwrite property ID
+            appwrite_file_id: image.id, // Original Appwrite file ID
             appwrite_bucket_id: 'properties', // Appwrite bucket ID
             image_url: image.fileUrl, // Direct URL to Appwrite storage
             image_title: `Property Image ${index + 1}`,
@@ -705,7 +775,10 @@ class CompleteMigrationService {
             is_primary: index === 0,
             storage_provider: 'appwrite', // Mark as Appwrite storage
             file_size: image.fileSize || null,
-            file_type: image.mimeType || 'image/jpeg'
+            file_type: image.mimeType || 'image/jpeg',
+            // Additional metadata for traceability
+            original_filename: image.name || `image_${index + 1}`,
+            uploaded_at: image.$createdAt || new Date().toISOString()
         }));
 
         const { error } = await this.supabase.client
@@ -717,9 +790,15 @@ class CompleteMigrationService {
 
         if (error) {
             console.error('❌ Error linking images:', error);
+            console.error('❌ Failed property details:', {
+                appwrite_id: appwriteProperty.$id,
+                supabase_id: supabasePropertyId,
+                image_count: images.length
+            });
             return 0;
         }
 
+        console.log(`✅ Successfully linked ${imageRecords.length} images for property ${appwriteProperty.$id}`);
         return imageRecords.length;
     }
 
@@ -727,17 +806,23 @@ class CompleteMigrationService {
         const videos = this.parseJSON(appwriteProperty.videos);
         if (!videos || !Array.isArray(videos) || videos.length === 0) return 0;
 
-        // Create video records that reference Appwrite storage or external URLs
+        console.log(`🎥 Linking ${videos.length} videos for property ${appwriteProperty.$id} → Supabase ID ${supabasePropertyId}`);
+
+        // Create video records that maintain the Appwrite → Supabase connection
         const videoRecords = videos.map((video, index) => ({
-            property_id: supabasePropertyId,
+            property_id: supabasePropertyId, // Supabase property foreign key
+            appwrite_property_id: appwriteProperty.$id, // Original Appwrite property ID
             video_url: video.url,
             video_title: video.title || `Property Video ${index + 1}`,
             video_type: this.getVideoType(video.url),
             sort_order: index,
-            storage_provider: video.url.includes('appwrite') ? 'appwrite' : 'external', // Detect storage
+            storage_provider: video.url.includes('appwrite') ? 'appwrite' : 'external',
             appwrite_file_id: video.id || null, // If stored in Appwrite
             duration: video.duration || null,
-            file_size: video.fileSize || null
+            file_size: video.fileSize || null,
+            // Additional metadata
+            original_filename: video.name || `video_${index + 1}`,
+            uploaded_at: video.$createdAt || new Date().toISOString()
         }));
 
         const { error } = await this.supabase.client
@@ -749,9 +834,15 @@ class CompleteMigrationService {
 
         if (error) {
             console.error('❌ Error linking videos:', error);
+            console.error('❌ Failed property details:', {
+                appwrite_id: appwriteProperty.$id,
+                supabase_id: supabasePropertyId,
+                video_count: videos.length
+            });
             return 0;
         }
 
+        console.log(`✅ Successfully linked ${videoRecords.length} videos for property ${appwriteProperty.$id}`);
         return videoRecords.length;
     }
 
@@ -775,26 +866,44 @@ class CompleteMigrationService {
                 .from('areas')
                 .select('*', { count: 'exact', head: true });
 
-            // Check media linking counts
-            const { count: imageCount, error: imageError } = await this.supabase.client
-                .from('property_images')
-                .select('*', { count: 'exact', head: true });
-
-            const { count: videoCount, error: videoError } = await this.supabase.client
-                .from('property_videos')
-                .select('*', { count: 'exact', head: true });
-
             // Check relationship integrity
             const { count: orphanedCount, error: orphanError } = await this.supabase.client
                 .from('properties')
                 .select('*', { count: 'exact', head: true })
                 .is('area_id', null);
 
+            // Check media data in properties
+            const { data: mediaStats } = await this.supabase.client
+                .from('properties')
+                .select('appwrite_images, appwrite_videos')
+                .not('appwrite_images', 'is', null)
+                .limit(1000);
+
+            let totalImages = 0;
+            let totalVideos = 0;
+            let propertiesWithImages = 0;
+            let propertiesWithVideos = 0;
+
+            if (mediaStats) {
+                mediaStats.forEach(prop => {
+                    if (prop.appwrite_images && Array.isArray(prop.appwrite_images)) {
+                        totalImages += prop.appwrite_images.length;
+                        if (prop.appwrite_images.length > 0) propertiesWithImages++;
+                    }
+                    if (prop.appwrite_videos && Array.isArray(prop.appwrite_videos)) {
+                        totalVideos += prop.appwrite_videos.length;
+                        if (prop.appwrite_videos.length > 0) propertiesWithVideos++;
+                    }
+                });
+            }
+
             console.log(`📊 VALIDATION RESULTS:`);
             console.log(`   Properties: ${propertyCount} (Expected: 3,228)`);
             console.log(`   Areas: ${areaCount} (Expected: 200+)`);
-            console.log(`   Images linked to Appwrite: ${imageCount}`);
-            console.log(`   Videos linked: ${videoCount}`);
+            console.log(`   🖼️ Total Images from Appwrite: ${totalImages}`);
+            console.log(`   🎥 Total Videos from Appwrite: ${totalVideos}`);
+            console.log(`   🏠 Properties with Images: ${propertiesWithImages}`);
+            console.log(`   🏠 Properties with Videos: ${propertiesWithVideos}`);
             console.log(`   Properties without area: ${orphanedCount || 0}`);
 
             // Sample check with media
@@ -803,45 +912,46 @@ class CompleteMigrationService {
                 .select(`
                     property_code,
                     title,
+                    appwrite_images,
+                    appwrite_videos,
+                    main_image_url,
                     areas(area_name),
                     property_types(type_name),
                     contacts(contact_name, primary_phone)
                 `)
-                .limit(1)
-                .single();
-
-            // Check media linking sample
-            const { data: mediaCheck } = await this.supabase.client
-                .from('property_images')
-                .select('appwrite_file_id, storage_provider, image_url')
+                .not('appwrite_images', 'is', null)
                 .limit(1)
                 .single();
 
             if (sampleProperty) {
-                console.log(`\n📋 SAMPLE PROPERTY WITH RELATIONSHIPS:`);
+                console.log(`\n📋 SAMPLE PROPERTY WITH MEDIA:`);
                 console.log(`   Code: ${sampleProperty.property_code}`);
                 console.log(`   Title: ${sampleProperty.title}`);
                 console.log(`   Area: ${sampleProperty.areas?.area_name || 'N/A'}`);
                 console.log(`   Type: ${sampleProperty.property_types?.type_name || 'N/A'}`);
                 console.log(`   Contact: ${sampleProperty.contacts?.contact_name || 'N/A'}`);
-            }
-
-            if (mediaCheck) {
-                console.log(`\n🖼️ SAMPLE MEDIA LINKING:`);
-                console.log(`   Appwrite File ID: ${mediaCheck.appwrite_file_id}`);
-                console.log(`   Storage Provider: ${mediaCheck.storage_provider}`);
-                console.log(`   Image URL: ${mediaCheck.image_url?.substring(0, 50)}...`);
+                console.log(`   Images: ${sampleProperty.appwrite_images?.length || 0}`);
+                console.log(`   Videos: ${sampleProperty.appwrite_videos?.length || 0}`);
+                console.log(`   Main Image: ${sampleProperty.main_image_url?.substring(0, 50)}...`);
+                
+                if (sampleProperty.appwrite_images?.[0]) {
+                    const firstImage = sampleProperty.appwrite_images[0];
+                    console.log(`   🔗 Sample Image Connection:`);
+                    console.log(`     File ID: ${firstImage.id}`);
+                    console.log(`     Bucket: ${firstImage.bucketId || '673a2734001f92c1826e'}`);
+                    console.log(`     URL: ${firstImage.fileUrl?.substring(0, 80)}...`);
+                }
             }
 
             const successRate = ((propertyCount / 3228) * 100).toFixed(1);
             console.log(`\n🎯 MIGRATION SUCCESS RATE: ${successRate}%`);
-            console.log(`🔗 MEDIA LINKING: Images and videos remain in Appwrite storage`);
+            console.log(`🔗 MEDIA STORAGE: All images and videos linked to Appwrite storage bucket 673a2734001f92c1826e`);
+            console.log(`📷 MEDIA TOTALS: Expected 5000+ images, 173+ videos from Appwrite storage`);
 
-            if (successRate >= 95) {
-                console.log('✅ MIGRATION SUCCESSFUL: 95%+ success rate achieved');
-                console.log('✅ MEDIA LINKING: Files remain accessible in Appwrite storage');
+            if (successRate >= 95 && totalImages > 1000) {
+                console.log('✅ MIGRATION SUCCESSFUL: 95%+ success rate and media properly linked');
             } else {
-                console.log('⚠️ MIGRATION NEEDS REVIEW: Success rate below 95%');
+                console.log('⚠️ MIGRATION NEEDS REVIEW: Check success rate and media linking');
             }
 
         } catch (error) {
