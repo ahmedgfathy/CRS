@@ -9,13 +9,15 @@
     "migrate:test": "node migrate.js test",
     "migrate:analyze": "node migrate.js analyze",
     "migrate:users": "node migrate.js users",
-    "migrate:properties": "node migrate.js properties", 
+    "migrate:properties": "node migrate.js properties",
     "migrate:leads": "node migrate.js leads",
     "migrate:full": "node migrate.js full"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
     "appwrite": "^18.2.0",
     "dotenv": "^16.3.1",
+    "node-appwrite": "^17.2.0",
     "pg": "^8.11.3"
   },
   "devDependencies": {
