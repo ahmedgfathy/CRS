@@ -13,10 +13,13 @@ import {
   Share,
   Linking,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { appwriteStorage } from '../services/appwrite-storage';
+import { locationService, LocationCoords } from '../services/location';
+import { screenProtectionService } from '../services/screenProtection';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -26,16 +29,59 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [relatedProperties, setRelatedProperties] = useState<any[]>([]);
+  const [userLocation, setUserLocation] = useState<LocationCoords | null>(null);
+  const [distanceToProperty, setDistanceToProperty] = useState<string | null>(null);
 
   useEffect(() => {
+    // Enable screenshot protection for this screen
+    screenProtectionService.enableScreenProtection();
+    
     if (property) {
       loadPropertyDetails();
       loadPropertyImages();
       loadRelatedProperties();
+      calculateDistanceToProperty();
     } else if (route.params.propertyId) {
       loadPropertyById(route.params.propertyId);
     }
+
+    // Cleanup on unmount
+    return () => {
+      // Note: We don't disable screenshot protection on unmount
+      // as it should remain active throughout the app
+    };
   }, []);
+
+  const calculateDistanceToProperty = async () => {
+    try {
+      const userLoc = await locationService.getCurrentLocation();
+      if (userLoc) {
+        setUserLocation(userLoc);
+        
+        // Get property coordinates
+        let propertyCoords: LocationCoords | null = null;
+        
+        if (property.latitude && property.longitude) {
+          propertyCoords = {
+            latitude: parseFloat(property.latitude),
+            longitude: parseFloat(property.longitude)
+          };
+        } else if (property.areas?.latitude && property.areas?.longitude) {
+          propertyCoords = {
+            latitude: parseFloat(property.areas.latitude),
+            longitude: parseFloat(property.areas.longitude)
+          };
+        }
+        
+        if (propertyCoords) {
+          const distance = locationService.calculateDistance(userLoc, propertyCoords);
+          setDistanceToProperty(`${distance} km from your location`);
+        }
+      }
+    } catch (error) {
+      console.log('Could not calculate distance to property:', error);
+    }
+  };
 
   const loadPropertyById = async (propertyId: number) => {
     try {
@@ -257,21 +303,36 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
       {/* Title */}
       <Text style={styles.propertyTitle}>{property.title}</Text>
       
-      {/* Location */}
-      <View style={styles.locationRow}>
-        <Ionicons name="location" size={20} color="#2563EB" />
-        <Text style={styles.locationText}>
-          {property.areas?.area_name || 'Location not specified'}
-        </Text>
+      {/* Location and type info */}
+      <View style={styles.infoRow}>
+        <View style={styles.infoItem}>
+          <Ionicons name="location" size={18} color="#2563EB" />
+          <Text style={styles.infoText}>
+            {property.areas?.area_name || 'Location not specified'}
+          </Text>
+        </View>
       </View>
       
-      {/* Property type */}
-      <View style={styles.locationRow}>
-        <MaterialIcons name="home" size={20} color="#2563EB" />
-        <Text style={styles.locationText}>
-          {property.property_types?.type_name || 'Type not specified'}
-        </Text>
+      <View style={styles.infoRow}>
+        <View style={styles.infoItem}>
+          <MaterialIcons name="home" size={18} color="#2563EB" />
+          <Text style={styles.infoText}>
+            {property.property_types?.type_name || 'Type not specified'}
+          </Text>
+        </View>
       </View>
+      
+      {/* Distance information */}
+      {distanceToProperty && (
+        <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <Ionicons name="car" size={18} color="#2563EB" />
+            <Text style={styles.distanceText}>
+              {distanceToProperty}
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 
@@ -281,65 +342,97 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
       <View style={styles.specsContainer}>
         {property.bedrooms && (
           <View style={styles.specItem}>
-            <Ionicons name="bed" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Bedrooms</Text>
-            <Text style={styles.specValue}>{property.bedrooms}</Text>
+            <View style={styles.specIconContainer}>
+              <Ionicons name="bed" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Bedrooms</Text>
+              <Text style={styles.specValue}>{property.bedrooms}</Text>
+            </View>
           </View>
         )}
         
         {property.bathrooms && (
           <View style={styles.specItem}>
-            <MaterialIcons name="bathtub" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Bathrooms</Text>
-            <Text style={styles.specValue}>{property.bathrooms}</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="bathtub" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Bathrooms</Text>
+              <Text style={styles.specValue}>{property.bathrooms}</Text>
+            </View>
           </View>
         )}
         
         {property.area && (
           <View style={styles.specItem}>
-            <MaterialIcons name="square-foot" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Area</Text>
-            <Text style={styles.specValue}>{property.area} m²</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="square-foot" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Area</Text>
+              <Text style={styles.specValue}>{property.area} m²</Text>
+            </View>
           </View>
         )}
         
         {property.land_area && (
           <View style={styles.specItem}>
-            <MaterialIcons name="landscape" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Land Area</Text>
-            <Text style={styles.specValue}>{property.land_area} m²</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="landscape" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Land Area</Text>
+              <Text style={styles.specValue}>{property.land_area} m²</Text>
+            </View>
           </View>
         )}
         
         {property.building_area && (
           <View style={styles.specItem}>
-            <MaterialIcons name="apartment" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Building Area</Text>
-            <Text style={styles.specValue}>{property.building_area} m²</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="apartment" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Building Area</Text>
+              <Text style={styles.specValue}>{property.building_area} m²</Text>
+            </View>
           </View>
         )}
         
         {property.floors && (
           <View style={styles.specItem}>
-            <MaterialIcons name="layers" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Floors</Text>
-            <Text style={styles.specValue}>{property.floors}</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="layers" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Floors</Text>
+              <Text style={styles.specValue}>{property.floors}</Text>
+            </View>
           </View>
         )}
         
         {property.parking_spaces && (
           <View style={styles.specItem}>
-            <MaterialIcons name="local-parking" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Parking</Text>
-            <Text style={styles.specValue}>{property.parking_spaces} spaces</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="local-parking" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Parking</Text>
+              <Text style={styles.specValue}>{property.parking_spaces} spaces</Text>
+            </View>
           </View>
         )}
         
         {property.year_built && (
           <View style={styles.specItem}>
-            <MaterialIcons name="date-range" size={20} color="#2563EB" />
-            <Text style={styles.specLabel}>Year Built</Text>
-            <Text style={styles.specValue}>{property.year_built}</Text>
+            <View style={styles.specIconContainer}>
+              <MaterialIcons name="date-range" size={20} color="#2563EB" />
+            </View>
+            <View style={styles.specTextContainer}>
+              <Text style={styles.specLabel}>Year Built</Text>
+              <Text style={styles.specValue}>{property.year_built}</Text>
+            </View>
           </View>
         )}
       </View>
@@ -365,7 +458,9 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
         <View style={styles.amenitiesContainer}>
           {amenities.map((amenity: string, index: number) => (
             <View key={index} style={styles.amenityItem}>
-              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+              <View style={styles.amenityIconContainer}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+              </View>
               <Text style={styles.amenityText}>{amenity}</Text>
             </View>
           ))}
@@ -417,31 +512,40 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
 
   const renderContactButtons = () => (
     <View style={styles.contactSection}>
-      <TouchableOpacity style={styles.callButton} onPress={handleCall}>
-        <Ionicons name="call" size={20} color="white" />
-        <Text style={styles.contactButtonText}>Call</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.whatsappButton} onPress={handleWhatsApp}>
-        <Ionicons name="logo-whatsapp" size={20} color="white" />
-        <Text style={styles.contactButtonText}>WhatsApp</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.inquireButton} onPress={() => {
-        // Handle inquiry - could open a form or navigate to contact screen
-        Alert.alert('Inquiry', 'This feature will be available soon!');
-      }}>
-        <Ionicons name="mail" size={20} color="white" />
-        <Text style={styles.contactButtonText}>Inquire</Text>
-      </TouchableOpacity>
+      <View style={styles.contactButtonsContainer}>
+        <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+          <View style={styles.buttonContent}>
+            <Ionicons name="call" size={18} color="white" />
+            <Text style={styles.contactButtonText}>Call</Text>
+          </View>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.whatsappButton} onPress={handleWhatsApp}>
+          <View style={styles.buttonContent}>
+            <Ionicons name="logo-whatsapp" size={18} color="white" />
+            <Text style={styles.contactButtonText}>WhatsApp</Text>
+          </View>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.inquireButton} onPress={() => {
+          Alert.alert('Inquiry', 'This feature will be available soon!');
+        }}>
+          <View style={styles.buttonContent}>
+            <Ionicons name="mail" size={18} color="white" />
+            <Text style={styles.contactButtonText}>Inquire</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   if (!property) {
     return (
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
         <View style={styles.loadingContainer}>
-          <Text>Property not found</Text>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading property details...</Text>
         </View>
       </SafeAreaView>
     );
@@ -477,6 +581,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
   },
   scrollView: {
     flex: 1,
@@ -564,7 +673,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   price: {
     fontSize: 28,
@@ -593,11 +702,31 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
   },
   propertyTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1F2937',
+    marginBottom: 16,
+    lineHeight: 28,
+  },
+  infoRow: {
     marginBottom: 12,
-    lineHeight: 32,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginLeft: 10,
+    flex: 1,
+  },
+  distanceText: {
+    fontSize: 16,
+    color: '#2563EB',
+    marginLeft: 10,
+    flex: 1,
+    fontWeight: '600',
   },
   locationRow: {
     flexDirection: 'row',
@@ -613,13 +742,14 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: 'white',
     marginTop: 8,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   specsContainer: {
     flexDirection: 'row',
@@ -631,15 +761,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    padding: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
+    padding: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  specIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EBF4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  specTextContainer: {
+    flex: 1,
   },
   specLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
-    marginLeft: 8,
-    flex: 1,
+    marginBottom: 2,
+    fontWeight: '500',
   },
   specValue: {
     fontSize: 14,
@@ -659,12 +803,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '50%',
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingRight: 8,
+  },
+  amenityIconContainer: {
+    marginRight: 8,
   },
   amenityText: {
     fontSize: 14,
     color: '#4B5563',
-    marginLeft: 8,
+    flex: 1,
   },
   relatedPropertiesList: {
     paddingLeft: 0,
@@ -710,46 +858,59 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   contactSection: {
-    flexDirection: 'row',
-    padding: 20,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    paddingTop: 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
+  },
+  contactButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   callButton: {
     flex: 1,
     backgroundColor: '#10B981',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginRight: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   whatsappButton: {
     flex: 1,
     backgroundColor: '#25D366',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginHorizontal: 4,
+    paddingVertical: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   inquireButton: {
     flex: 1,
     backgroundColor: '#2563EB',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginLeft: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   contactButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginLeft: 6,
   },

@@ -1,15 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppState, AppStateStatus } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
 import PropertiesScreen from './screens/PropertiesScreen';
 import PropertyDetailScreen from './screens/PropertyDetailScreen';
+import { screenProtectionService } from './services/screenProtection';
 
 const Stack = createStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    // Initialize screenshot protection when app starts
+    const initializeProtection = async () => {
+      await screenProtectionService.initialize();
+    };
+    
+    initializeProtection();
+
+    // Handle app state changes to maintain protection
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      screenProtectionService.handleAppStateChange(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>

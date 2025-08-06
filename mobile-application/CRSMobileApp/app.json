@@ -13,17 +13,41 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs location access to show properties near you.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to show properties near you."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow CRS to use your location to show nearby properties.",
+          "locationAlwaysPermission": "Allow CRS to use your location to show nearby properties.",
+          "locationWhenInUsePermission": "Allow CRS to use your location to show nearby properties."
+        }
+      ],
+      [
+        "expo-screen-capture",
+        {
+          "allowsScreenCapture": false
+        }
+      ]
+    ]
   }
 }

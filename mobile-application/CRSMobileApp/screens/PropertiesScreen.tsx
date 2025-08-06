@@ -20,6 +20,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { appwriteStorage } from '../services/appwrite-storage';
+import { locationService, LocationCoords } from '../services/location';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -138,9 +139,56 @@ export default function PropertiesScreen({ navigation }: any) {
   const [areaSearchText, setAreaSearchText] = useState('');
   const [typeSearchText, setTypeSearchText] = useState('');
 
+  // Location-based features
+  const [userLocation, setUserLocation] = useState<LocationCoords | null>(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [sortByDistance, setSortByDistance] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+
   useEffect(() => {
     loadInitialData();
+    requestLocationPermission();
   }, []);
+
+  // Location permission request
+  const requestLocationPermission = async () => {
+    setLoadingLocation(true);
+    try {
+      const permission = await locationService.requestLocationPermission();
+      setLocationPermissionGranted(permission.granted);
+      
+      if (permission.granted) {
+        const location = await locationService.getCurrentLocation();
+        if (location) {
+          setUserLocation(location);
+          console.log('📍 User location set:', location);
+        }
+      }
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
+  // Toggle sort by distance
+  const toggleSortByDistance = () => {
+    if (!locationPermissionGranted) {
+      Alert.alert(
+        'Location Required',
+        'Please allow location access to sort properties by distance.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Enable Location', onPress: requestLocationPermission }
+        ]
+      );
+      return;
+    }
+    
+    setSortByDistance(!sortByDistance);
+    // Reload data with new sorting
+    loadInitialData(1, false);
+  };
 
   // Reload data when filters change
   useEffect(() => {
@@ -160,13 +208,26 @@ export default function PropertiesScreen({ navigation }: any) {
       
       console.log(`🔍 Loading page ${page} of properties and units...`);
       
+      // Test database connection first
+      console.log('🔧 Testing database connection...');
+      const { count, error: countError } = await supabase
+        .from('properties')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        console.error('❌ Database connection error:', countError);
+        throw new Error(`Database connection failed: ${countError.message}`);
+      }
+      
+      console.log(`✅ Database connected! Found ${count} total properties`);
+      
       let allValidItems: any[] = [];
       let currentOffset = append ? dbOffset : 0;
       let hasMoreProperties = true;
       
       // Keep loading until we have enough properties or no more data
       while (allValidItems.length < ITEMS_PER_PAGE && hasMoreProperties) { // REMOVED LOOP LIMIT - no artificial restrictions
-        // Build query with filters applied
+        // Build query with filters applied - include GPS coordinates
         let propertyQuery = supabase
           .from('properties')
           .select(`
@@ -178,7 +239,10 @@ export default function PropertiesScreen({ navigation }: any) {
             category_id,
             listing_type,
             created_at,
-            areas(area_name),
+            latitude,
+            longitude,
+            address,
+            areas(area_name, latitude, longitude),
             property_types(type_name)
           `);
 
@@ -316,21 +380,38 @@ export default function PropertiesScreen({ navigation }: any) {
         }
       }
       
-      // Apply YOUR RULES to final sorting - NOT just newest first
-      const sortedProperties = allValidItems.sort((a, b) => {
-        // Rule 1: Properties with images come first
-        if (a.hasImage && !b.hasImage) return -1;
-        if (!a.hasImage && b.hasImage) return 1;
-        
-        // Rule 2: Among same image status, properties with prices come first
-        const aHasPrice = !!(a.price && a.price > 0);
-        const bHasPrice = !!(b.price && b.price > 0);
-        if (aHasPrice && !bHasPrice) return -1;
-        if (!aHasPrice && bHasPrice) return 1;
-        
-        // Rule 3: Among same image and price status, newest first
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
+      // Apply YOUR RULES to final sorting - with optional distance sorting
+      let sortedProperties = allValidItems;
+      
+      // Add distance information if user location is available (temporarily disabled geocoding)
+      if (userLocation) {
+        console.log('📍 Adding distance information using existing coordinates...');
+        sortedProperties = locationService.addDistanceToProperties(allValidItems, userLocation);
+        console.log('📍 Added distance information to properties');
+      }
+      
+      // Sort properties based on user preference
+      if (sortByDistance && userLocation) {
+        // Sort by distance first, then by your rules
+        sortedProperties = locationService.sortPropertiesByDistance(sortedProperties);
+        console.log('📍 Properties sorted by distance');
+      } else {
+        // Apply original sorting rules
+        sortedProperties = sortedProperties.sort((a, b) => {
+          // Rule 1: Properties with images come first
+          if (a.hasImage && !b.hasImage) return -1;
+          if (!a.hasImage && b.hasImage) return 1;
+          
+          // Rule 2: Among same image status, properties with prices come first
+          const aHasPrice = !!(a.price && a.price > 0);
+          const bHasPrice = !!(b.price && b.price > 0);
+          if (aHasPrice && !bHasPrice) return -1;
+          if (!aHasPrice && bHasPrice) return 1;
+          
+          // Rule 3: Among same image and price status, newest first
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      }
       
       // Debug final sorting results
       console.log('🏆 FINAL SORTING RESULTS - First 4 properties:');
@@ -340,7 +421,8 @@ export default function PropertiesScreen({ navigation }: any) {
         console.log(`      HasImage: ${p.hasImage ? 'YES' : 'NO'}`);
         console.log(`      Price: ${p.price ? `${p.price.toLocaleString()} EGP` : 'NO PRICE'}`);
         console.log(`      Type: ${p.listing_type}`);
-        console.log(`      Should be first: ${p.hasImage ? 'Images first!' : p.price ? 'Has price' : 'Should be last'}`);
+        console.log(`      Distance: ${p.distance ? `${p.distance} km` : 'Unknown'}`);
+        console.log(`      Should be first: ${sortByDistance && p.distance ? 'Nearest first!' : p.hasImage ? 'Images first!' : p.price ? 'Has price' : 'Should be last'}`);
       });
       
       // Update database offset for next load
@@ -414,9 +496,11 @@ export default function PropertiesScreen({ navigation }: any) {
       }
       
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       if (!append) {
-        Alert.alert('Error', 'Failed to load properties. Please check your connection.');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        Alert.alert('Error', `Failed to load properties: ${errorMessage}. Please check your connection.`);
       }
     } finally {
       setLoading(false);
@@ -454,7 +538,10 @@ export default function PropertiesScreen({ navigation }: any) {
           .from('properties')
           .select(`
             *,
-            areas(area_name),
+            latitude,
+            longitude,
+            address,
+            areas(area_name, latitude, longitude),
             property_types(type_name)
           `);
         
@@ -725,6 +812,13 @@ export default function PropertiesScreen({ navigation }: any) {
           📍 {property.areas?.area_name || 'Location not specified'}
         </Text>
         
+        {/* Show distance if available */}
+        {property.distance && (
+          <Text style={styles.propertyDistance} numberOfLines={1}>
+            🚗 {property.distanceText}
+          </Text>
+        )}
+        
         <Text style={styles.propertyType}>
           🏠 {property.property_types?.type_name || 'Type not specified'}
         </Text>
@@ -850,8 +944,33 @@ export default function PropertiesScreen({ navigation }: any) {
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Browse Properties</Text>
-          <View style={styles.headerPlaceholder} />
+          
+          {/* Location toggle button */}
+          <TouchableOpacity 
+            style={styles.locationButton}
+            onPress={toggleSortByDistance}
+            disabled={loadingLocation}
+          >
+            {loadingLocation ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Ionicons 
+                name={sortByDistance ? "location" : "location-outline"} 
+                size={20} 
+                color={locationPermissionGranted ? "white" : "#94A3B8"} 
+              />
+            )}
+          </TouchableOpacity>
         </View>
+        
+        {/* Location status indicator */}
+        {locationPermissionGranted && userLocation && (
+          <View style={styles.locationStatus}>
+            <Text style={styles.locationStatusText}>
+              {sortByDistance ? '📍 Showing nearest properties first' : '📍 Location enabled - tap to sort by distance'}
+            </Text>
+          </View>
+        )}
       </View>
       
       <FlatList
@@ -1178,6 +1297,25 @@ const styles = StyleSheet.create({
   headerPlaceholder: {
     width: 40, // Same width as back button to center the title
   },
+  locationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  locationStatus: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  locationStatusText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
   scrollView: {
     flex: 1,
   },
@@ -1425,6 +1563,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     marginBottom: 4,
+  },
+  propertyDistance: {
+    fontSize: 11,
+    color: '#2563EB',
+    marginBottom: 4,
+    fontWeight: '600',
   },
   propertyType: {
     fontSize: 12,
